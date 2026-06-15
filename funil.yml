@@ -1,0 +1,46 @@
+name: Funil Comercial Weni
+
+on:
+  schedule:
+    - cron: '0 15 * * *'   # 12h horário de Brasília (UTC-3)
+    - cron: '0 21 * * *'   # 18h horário de Brasília (UTC-3)
+  workflow_dispatch:        # permite rodar manualmente também
+
+permissions:
+  contents: write
+
+jobs:
+  gerar-funil:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependências
+        run: pip install pandas openpyxl requests
+
+      - name: Baixar dados da Weni
+        env:
+          WENI_TOKEN_MESSAGES: ${{ secrets.WENI_TOKEN_MESSAGES }}
+          WENI_TOKEN_CONTACTS: ${{ secrets.WENI_TOKEN_CONTACTS }}
+        run: python weni_api.py --output entradas --dias 45
+
+      - name: Gerar funil
+        run: python funil_weni.py --input entradas --output saidas
+
+      - name: Publicar HTML no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp saidas/funil_comercial_amara.html index.html
+          git add index.html
+          git diff --staged --quiet || git commit -m "Atualiza funil comercial"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
