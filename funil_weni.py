@@ -306,7 +306,11 @@ def classify(conv_path, ct_map, orders):
     return contacts
 
 def build_html(contacts, out_path):
+    from datetime import datetime, timezone, timedelta
+    BRT = timezone(timedelta(hours=-3))
+    now = datetime.now(tz=BRT).strftime("%d/%m/%Y %H:%M")
     html=HTML_TEMPLATE.replace("__DATA__", json.dumps(contacts,ensure_ascii=False))
+    html=html.replace("__UPDATED__", now)
     with open(out_path,"w",encoding="utf-8") as f: f.write(html)
 
 
@@ -514,6 +518,7 @@ footer b{color:var(--ink)}
   <h1>Funil Comercial</h1>
   <div class="sub">Funil pela conversa. A última coluna confronta a planilha de pedidos por CNPJ (visão independente).</div>
   <div class="weeknow" id="weeknow"></div>
+  <div class="weeknow" style="margin-left:8px;background:#2E4057" id="updated">Atualizado em: __UPDATED__</div>
   <div class="totais" id="totais"></div>
 </header>
 <div class="controls">
