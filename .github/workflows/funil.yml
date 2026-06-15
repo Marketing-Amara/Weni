@@ -2,9 +2,12 @@ name: Funil Comercial Weni
 
 on:
   schedule:
-    - cron: '0 15 * * *'   # 12h horário de Brasília (UTC-3) = 15h UTC
-    - cron: '0 21 * * *'   # 18h horário de Brasília (UTC-3) = 21h UTC
-  workflow_dispatch:        # permite rodar manualmente pelo GitHub também
+    - cron: '0 15 * * *'   # 12h horário de Brasília (UTC-3)
+    - cron: '0 21 * * *'   # 18h horário de Brasília (UTC-3)
+  workflow_dispatch:        # permite rodar manualmente também
+
+permissions:
+  contents: write
 
 jobs:
   gerar-funil:
@@ -29,14 +32,15 @@ jobs:
         run: python weni_api.py --output entradas --dias 45
 
       - name: Gerar funil
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python funil_weni.py --input entradas --output saidas
 
-      - name: Publicar HTML no GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./saidas
-          destination_dir: .
-          keep_files: true
+      - name: Publicar HTML no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp saidas/funil_comercial_amara.html index.html
+          git add index.html
+          git diff --staged --quiet || git commit -m "Atualiza funil comercial"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
