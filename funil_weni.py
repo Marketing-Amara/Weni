@@ -448,12 +448,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-:root{
-  --paper:#EEF1EE;--card:#FFFFFF;--ink:#16243A;--ink-soft:#5A6B82;--line:#DEE3DE;
-  --call:#C75B12;--over:#B0322E;--over-bg:#FCF1F0;--orc:#1F6FB2;--orc-bg:#E3EFF8;
-  --won:#1E7A4F;--won-bg:#E4F3EA;--erp:#0B6B57;--erp-bg:#DCF1EB;--lost:#5A4A7A;--done:#0E7C66;--done-bg:#E1F2EE;
-  --i5:#1E7A4F;--i4:#C75B12;--i3:#A8860B;
-}
+:root{--paper:#EEF1EE;--card:#FFFFFF;--ink:#16243A;--ink-soft:#5A6B82;--line:#DEE3DE;--call:#C75B12;--over:#B0322E;--orc:#1F6FB2;--orc-bg:#E3EFF8;--won:#1E7A4F;--won-bg:#E4F3EA;--erp:#0B6B57;--erp-bg:#DCF1EB;--lost:#5A4A7A;--done:#0E7C66;--done-bg:#E1F2EE;--i5:#1E7A4F;--i4:#C75B12;--i3:#A8860B;}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);font-size:14px}
 header{padding:22px 28px 14px;border-bottom:1px solid var(--line);background:var(--card)}
@@ -495,8 +490,7 @@ h1{font-family:'Sora',sans-serif;font-size:22px;font-weight:700;margin:6px 0 2px
 .orderbox .st{font-size:10.5px;color:var(--ink-soft);margin-top:1px}
 .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .b{font-size:10.5px;padding:2px 8px;border-radius:999px;background:#EDF0F2;color:var(--ink-soft)}
-.b.sell{background:#EAE6F4;color:#5A4A7A}.b.orc{background:var(--orc-bg);color:var(--orc)}.b.inb{background:var(--won-bg);color:var(--won)}
-.b.uf{background:#E8EEF4;color:#33506E;font-weight:600}.b.done{background:var(--done-bg);color:var(--done)}.b.erp{background:var(--erp-bg);color:var(--erp);font-weight:600}
+.b.sell{background:#EAE6F4;color:#5A4A7A}.b.orc{background:var(--orc-bg);color:var(--orc)}.b.inb{background:var(--won-bg);color:var(--won)}.b.uf{background:#E8EEF4;color:#33506E;font-weight:600}.b.erp{background:var(--erp-bg);color:var(--erp);font-weight:600}
 .reason{font-size:11.5px;color:var(--ink-soft);margin-top:8px;line-height:1.4}
 .evid{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:12.5px;line-height:1.5}
 .evid .why{font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--tier);margin-bottom:4px}
@@ -509,14 +503,19 @@ footer b{color:var(--ink)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 4px}
 .legend span{display:flex;align-items:center;gap:5px;font-size:11px}
 .dot{width:13px;height:13px;border-radius:4px;display:inline-block}
-@media(prefers-reduced-motion:reduce){.card{transition:none}}
+.col-body{min-height:60px}
+.card{cursor:grab}
+.card.dragging{opacity:.4;cursor:grabbing}
+.col-drop-over{background:rgba(22,36,58,.06);border-radius:8px;outline:2px dashed var(--ink-soft)}
+.saving{position:fixed;bottom:16px;right:16px;background:var(--ink);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-family:'IBM Plex Mono',monospace;z-index:99;opacity:0;transition:opacity .3s}
+.saving.show{opacity:1}
 </style>
 </head>
 <body>
 <header>
   <div class="eyebrow">Amara NZero · WhatsApp Weni × Contatos × Relatório de Pedidos (CNPJ)</div>
   <h1>Funil Comercial</h1>
-  <div class="sub">Funil pela conversa. A última coluna confronta a planilha de pedidos por CNPJ (visão independente).</div>
+  <div class="sub">Internos e contas de teste removidos. Funil pela conversa + bloco ERP por CNPJ. Padrão: mês vigente.</div>
   <div class="weeknow" id="weeknow"></div>
   <div class="weeknow" style="margin-left:8px;background:#2E4057" id="updated">Atualizado em: __UPDATED__</div>
   <div class="totais" id="totais"></div>
@@ -534,10 +533,11 @@ footer b{color:var(--ink)}
     <span><i class="dot" style="background:var(--i5)"></i> Intenção 5</span>
     <span><i class="dot" style="background:var(--i4)"></i> Intenção 4</span>
     <span><i class="dot" style="background:var(--i3)"></i> Intenção 3</span>
-    <span><i class="dot" style="background:var(--erp)"></i> Tem pedido no ERP (CNPJ)</span>
+    <span><i class="dot" style="background:var(--erp)"></i> Confirmado no ERP</span>
   </div>
-  <strong>Funil pela conversa:</strong> <b>Entrar em contato</b> (quer fechar, aguarda vendedor) · <b>Atrasados</b> (data-alvo vencida no mês vigente) · <b>Mencionou orçamento</b> · <b>Fecharam pedido</b> (a conversa indica fechamento; fluig/repasse não conta) · <b>Perdidos</b> · <b>Entrou em contato</b> (atendente humano já respondeu).
-  <br><strong>Bloco separado — <span style="color:var(--erp)">Confirmado no ERP</span>:</strong> confronta o CNPJ com o relatório de pedidos. Lista quem <u>tem pedido real</u> (não cancelado) no relatório, <b>independente do que a conversa disse</b> — pega inclusive quem pediu direto na plataforma sem comentar. Onde houver pedido no ERP, o card mostra a etiqueta <span style="color:var(--erp)">✓ ERP</span> em qualquer coluna.
+  <strong>Colunas:</strong>
+  <b>Entrar em contato</b> · <b>Atrasados</b> · <b>Mencionou orçamento</b> · <b>Fecharam pedido</b> (conversa; fluig/repasse excluído) · <b>Perdidos</b> · <b>Entrou em contato</b> (atendente humano respondeu) · <b>✓ Confirmado no ERP</b> (CNPJ cruzado com relatório de pedidos — independente da conversa).
+  <br>Filtro de mês pré-selecionado no mês vigente. Para ver histórico, mude o select de Mês.
 </footer>
 <script>
 const DATA=__DATA__;
@@ -547,7 +547,8 @@ function parseISO(s){const[y,m,dd]=s.split('-').map(Number);return new Date(y,m-
 const NOW=new Date();
 const WEEK_START=startOfWeek(NOW);const WEEK_END=new Date(WEEK_START);WEEK_END.setDate(WEEK_START.getDate()+6);
 const MONTH_START=new Date(NOW.getFullYear(),NOW.getMonth(),1);
-document.getElementById('weeknow').textContent='Semana vigente: '+fmt(WEEK_START)+' – '+fmt(WEEK_END)+'  ·  Atrasados a partir de '+fmt(MONTH_START);
+const MES_NOMES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+document.getElementById('weeknow').textContent='Semana: '+fmt(WEEK_START)+' – '+fmt(WEEK_END)+'  ·  Mês vigente: '+MES_NOMES[NOW.getMonth()]+'/'+NOW.getFullYear();
 function isOverdue(c){if(c.stage!=='CONTATAR'||!c.contact_date_iso)return false;const d=parseISO(c.contact_date_iso);return d<WEEK_START&&d>=MONTH_START;}
 function isStale(c){if(c.stage!=='CONTATAR'||!c.contact_date_iso)return false;return parseISO(c.contact_date_iso)<MONTH_START;}
 function funnelStage(c){
@@ -555,7 +556,11 @@ function funnelStage(c){
   if(c.stage==='CONTATAR'){if(isStale(c))return 'HIDE';if(isOverdue(c))return 'ATRASADO';return 'CONTATAR';}
   return c.stage;
 }
-// colunas do funil (pela conversa) + bloco separado ERP no fim
+function inColumn(c,s){
+  if(s==='ERP') return c.erp_match;
+  if(kanbanState[c.uuid]) return kanbanState[c.uuid]===s;
+  return funnelStage(c)===s;
+}
 const STAGES=[
   {id:'CONTATAR',nome:'Entrar em contato',v:'call'},
   {id:'ATRASADO',nome:'Atrasados',v:'over'},
@@ -566,8 +571,8 @@ const STAGES=[
   {id:'ERP',nome:'✓ Confirmado no ERP',v:'erp',sep:true},
 ];
 const ICOLOR={5:'var(--i5)',4:'var(--i4)',3:'var(--i3)'};
-let f={q:'',vend:'',uf:'',mes:'',orig:''};
 const shown=Object.fromEntries(STAGES.map(s=>[s.id,(s.id==='ORCAMENTO'||s.id==='ENTROU'||s.id==='ERP')?60:1e9]));
+// ---- populate selects ----
 const sv=document.getElementById('f-vend');
 [...new Set(DATA.map(c=>c.vendedor))].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;sv.appendChild(o);});
 const suf=document.getElementById('f-uf');
@@ -575,44 +580,65 @@ const suf=document.getElementById('f-uf');
 const MES_PT={'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 const sm=document.getElementById('f-mes');
 [...new Set(DATA.map(c=>c.last_month))].sort().reverse().forEach(m=>{const o=document.createElement('option');o.value=m;const[y,mm]=m.split('-');o.textContent=MES_PT[mm]+'/'+y;sm.appendChild(o);});
-function filtra(){const q=f.q.toLowerCase();
-  return DATA.filter(c=>(!f.vend||c.vendedor===f.vend)&&(!f.uf||c.uf===f.uf)&&(!f.mes||c.last_month===f.mes)&&(!f.orig||c.origem===f.orig)&&
-    (!q||c.name.toLowerCase().includes(q)||c.urn.includes(q)||(c.empresa||'').toLowerCase().includes(q)||(c.cnpj||'').includes(q)||(c.cidade||'').toLowerCase().includes(q)));}
-function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+// CUR_MONTH defined AFTER sm is built so sm.value assignment works
+const CUR_MONTH=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');})();
+sm.value=CUR_MONTH;
+// ---- filter state — mes pre-set to current month ----
+let f={q:'',vend:'',uf:'',mes:CUR_MONTH,orig:''};
+function filtra(){
+  const q=f.q.toLowerCase();
+  return DATA.filter(c=>
+    (!f.vend||c.vendedor===f.vend)&&
+    (!f.uf||c.uf===f.uf)&&
+    (!f.mes||c.last_month===f.mes)&&
+    (!f.orig||c.origem===f.orig)&&
+    (!q||c.name.toLowerCase().includes(q)||c.urn.includes(q)||(c.empresa||'').toLowerCase().includes(q)||(c.cnpj||'').includes(q)||(c.cidade||'').toLowerCase().includes(q)));
+}
+function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function weekOf(iso){const d=parseISO(iso);const s=startOfWeek(d);const e=new Date(s);e.setDate(s.getDate()+4);return fmt(s)+'–'+fmt(e);}
 function card(c,v,isErpCol){
-  const d=document.createElement('article');d.className='card';d.tabIndex=0;d.style.setProperty('--tier',`var(--${v})`);
-  let dateHtml='';
+  const d=document.createElement('article');
+  d.className='card';d.tabIndex=0;d.style.setProperty('--tier','var(--'+v+')');
   const fs=funnelStage(c);
+  let dateHtml='';
   if(!isErpCol&&(fs==='CONTATAR'||fs==='ATRASADO')&&c.contact_date){
-    dateHtml=`<div class="datebox"><div class="when">📞 Contatar até ${esc(c.contact_date)}</div>
-      <div class="week">Semana de ${esc(weekOf(c.contact_date_iso))}</div><div class="basis">${esc(c.date_basis)}</div></div>`;
+    dateHtml='<div class="datebox"><div class="when">📞 Contatar até '+esc(c.contact_date)+'</div>'
+      +'<div class="week">Semana de '+esc(weekOf(c.contact_date_iso))+'</div>'
+      +'<div class="basis">'+esc(c.date_basis)+'</div></div>';
   }
   let orderHtml='';
   if(c.erp_match&&(isErpCol||c.stage==='FECHADO')){
-    orderHtml=`<div class="orderbox"><div class="ped">✓ Pedido ${esc(c.order_pedido)}</div><div class="st">${esc(c.order_status)} · ${esc(c.order_data)}</div></div>`;
+    orderHtml='<div class="orderbox"><div class="ped">✓ Pedido '+esc(c.order_pedido)+'</div>'
+      +'<div class="st">'+esc(c.order_status)+' · '+esc(c.order_data)+'</div></div>';
   }
+  const stageLabel={CONTATAR:'Entrar em contato',ENTROU:'Entrou',ORCAMENTO:'Orçamento',FECHADO:'Fechou',PERDIDO:'Perdido',SEM_SINAL:'Sem sinal'};
   let badges=[];
-  if(c.uf)badges.push(`<span class="b uf">${esc(c.uf)}</span>`);
-  if(c.vendedor)badges.push(`<span class="b sell">${esc(c.vendedor)}</span>`);
-  if(c.erp_match&&!isErpCol&&c.stage!=='FECHADO')badges.push(`<span class="b erp">✓ ERP</span>`);
-  if(isErpCol)badges.push(`<span class="b">Conversa: ${esc({CONTATAR:'Entrar em contato',ENTROU:'Entrou',ORCAMENTO:'Orçamento',FECHADO:'Fechou',PERDIDO:'Perdido',SEM_SINAL:'Sem sinal'}[c.stage]||c.stage)}</span>`);
-  if(c.origem==='Inbound')badges.push(`<span class="b inb">Inbound</span>`);
-  if(c.mencionou_orcamento&&c.stage!=='ORCAMENTO'&&!isErpCol)badges.push(`<span class="b orc">Tem orçamento</span>`);
-  const iscore=c.intent_score?`<div class="iscore" style="background:${ICOLOR[c.intent_score]}" title="Intenção ${c.intent_score}/5">${c.intent_score}</div>`:'';
-  d.innerHTML=`<div class="cardtop"><div><div class="nm">${esc(c.name)}</div>
-    ${c.empresa?`<div class="tel">${esc(c.empresa)}</div>`:''}
-    <div class="tel">${esc(c.urn)}${c.cidade?' · '+esc(c.cidade):''}${c.uf?'/'+esc(c.uf):''}</div>
-    ${c.cnpj?`<div class="tel">${esc(c.cnpj)}</div>`:''}
-    <div class="uuid">${esc(c.uuid)}</div></div>${iscore}</div>
-    ${dateHtml}${orderHtml}
-    <div class="badges">${badges.join('')}</div>
-    <div class="reason">últ. msg ${esc(c.last)}${c.client_waiting?' · cliente aguarda':''}</div>
-    <div class="evid">${c.ev_desc?`<div class="why">${esc(c.ev_desc)} · ${esc(c.ev_date)}</div><q>“${esc(c.ev_text)}”</q>`:'<q>Sem evidência de fechamento na conversa.</q>'}
-      ${c.intent_score?`<div class="extra">Intenção de compra: <b>${c.intent_score}/5</b> — ${esc(c.intent_desc)}</div>`:''}
-      <div class="extra">Vendedor: ${esc(c.vendedor)}${c.cnpj?' · CNPJ: '+esc(c.cnpj):''}${c.erp_match?' · Pedido ERP: '+esc(c.order_pedido)+' ('+esc(c.order_status)+')':''}</div></div>`;
-  const t=()=>d.classList.toggle('open');d.addEventListener('click',t);
-  d.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();t();}});
+  if(c.uf)badges.push('<span class="b uf">'+esc(c.uf)+'</span>');
+  if(c.vendedor)badges.push('<span class="b sell">'+esc(c.vendedor)+'</span>');
+  if(c.erp_match&&!isErpCol&&c.stage!=='FECHADO')badges.push('<span class="b erp">✓ ERP</span>');
+  if(isErpCol)badges.push('<span class="b">Conversa: '+esc(stageLabel[c.stage]||c.stage)+'</span>');
+  if(c.origem==='Inbound')badges.push('<span class="b inb">Inbound</span>');
+  if(c.mencionou_orcamento&&c.stage!=='ORCAMENTO'&&!isErpCol)badges.push('<span class="b orc">Tem orçamento</span>');
+  const iscore=c.intent_score?'<div class="iscore" style="background:'+ICOLOR[c.intent_score]+'" title="Intenção '+c.intent_score+'/5">'+c.intent_score+'</div>':'';
+  d.innerHTML='<div class="cardtop"><div>'
+    +'<div class="nm">'+esc(c.name)+'</div>'
+    +(c.empresa?'<div class="tel">'+esc(c.empresa)+'</div>':'')
+    +'<div class="tel">'+esc(c.urn)+(c.cidade?' · '+esc(c.cidade):'')+(c.uf?'/'+esc(c.uf):'')+'</div>'
+    +(c.cnpj?'<div class="tel">'+esc(c.cnpj)+'</div>':'')
+    +'<div class="uuid">'+esc(c.uuid)+'</div></div>'+iscore+'</div>'
+    +dateHtml+orderHtml
+    +'<div class="badges">'+badges.join('')+'</div>'
+    +'<div class="reason">últ. msg '+esc(c.last)+(c.client_waiting?' · cliente aguarda':'')+'</div>'
+    +'<div class="evid">'+(c.ev_desc?'<div class="why">'+esc(c.ev_desc)+' · '+esc(c.ev_date)+'</div><q>"'+esc(c.ev_text)+'"</q>':'<q>Sem evidência de fechamento na conversa.</q>')
+    +(c.intent_score?'<div class="extra">Intenção: <b>'+c.intent_score+'/5</b> — '+esc(c.intent_desc)+'</div>':'')
+    +'<div class="extra">Vendedor: '+esc(c.vendedor)+(c.cnpj?' · CNPJ: '+esc(c.cnpj):'')+(c.erp_match?' · Pedido ERP: '+esc(c.order_pedido)+' ('+esc(c.order_status)+')':'')+'</div></div>';
+  const t=()=>d.classList.toggle('open');
+  let _dragged=false;
+  d.setAttribute('draggable','true');d.dataset.uuid=c.uuid;
+  d.addEventListener('dragstart',e=>{e.dataTransfer.setData('uuid',c.uuid);d.classList.add('dragging');_dragged=true;});
+  d.addEventListener('dragend',()=>{d.classList.remove('dragging');setTimeout(()=>{_dragged=false;},50);});
+  d.addEventListener('click',()=>{if(!_dragged)d.classList.toggle('open');});
+  d.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();d.classList.toggle('open');}});
   return d;
 }
 function sortFn(s){
@@ -621,29 +647,72 @@ function sortFn(s){
   if(s==='ERP')return (a,b)=>(b.order_data||'').split('/').reverse().join('').localeCompare((a.order_data||'').split('/').reverse().join(''));
   return (a,b)=>(b.intent_score-a.intent_score)||b.last_iso.localeCompare(a.last_iso);
 }
-function inColumn(c,s){
-  if(s==='ERP') return c.erp_match;          // bloco separado: todo CNPJ com pedido
-  return funnelStage(c)===s;                 // funil pela conversa
-}
 function render(){
-  const data=filtra(),board=document.getElementById('board');board.innerHTML='';
+  const data=filtra();
+  const board=document.getElementById('board');board.innerHTML='';
   STAGES.forEach(s=>{
     const items=data.filter(c=>inColumn(c,s.id)).sort(sortFn(s.id));
-    const col=document.createElement('section');if(s.sep)col.className='col-sep';
-    col.innerHTML=`<div class="col-head" style="--tier:var(--${s.v})"><h2>${s.nome}</h2><span class="count">${items.length}</span></div>`;
-    if(!items.length)col.insertAdjacentHTML('beforeend','<div class="empty">Nenhum contato.</div>');
-    items.slice(0,shown[s.id]).forEach(c=>col.appendChild(card(c,s.v,s.id==='ERP')));
-    if(items.length>shown[s.id]){const b=document.createElement('button');b.className='more';
-      b.textContent=`Mostrar mais (${items.length-shown[s.id]} restantes)`;b.onclick=()=>{shown[s.id]+=60;render();};col.appendChild(b);}
+    const col=document.createElement('section');
+    if(s.sep)col.className='col-sep';
+    col.innerHTML='<div class="col-head" style="--tier:var(--'+s.v+')"><h2>'+s.nome+'</h2><span class="count">'+items.length+'</span></div>';
+    const body=document.createElement('div');body.className='col-body';
+    if(!items.length)body.insertAdjacentHTML('beforeend','<div class="empty">Nenhum contato.</div>');
+    items.slice(0,shown[s.id]).forEach(c=>body.appendChild(card(c,s.v,s.id==='ERP')));
+    if(s.id!=='ERP'){
+      body.addEventListener('dragover',e=>{e.preventDefault();body.classList.add('col-drop-over');});
+      body.addEventListener('dragleave',e=>{if(!body.contains(e.relatedTarget))body.classList.remove('col-drop-over');});
+      body.addEventListener('drop',async e=>{
+        e.preventDefault();body.classList.remove('col-drop-over');
+        const uuid=e.dataTransfer.getData('uuid');
+        if(!uuid)return;
+        kanbanState[uuid]=s.id;
+        render();
+        await pushKanban(uuid,s.id);
+      });
+    }
+    col.appendChild(body);
+    if(items.length>shown[s.id]){
+      const b=document.createElement('button');b.className='more';
+      b.textContent='Mostrar mais ('+( items.length-shown[s.id])+' restantes)';
+      b.onclick=()=>{shown[s.id]+=60;render();};
+      col.appendChild(b);
+    }
     board.appendChild(col);
   });
   const t=document.getElementById('totais');
-  t.innerHTML=STAGES.map(s=>`<div class="tot"><b style="color:var(--${s.v})">${data.filter(c=>inColumn(c,s.id)).length}</b><span>${s.nome}</span></div>`).join('');
+  t.innerHTML=STAGES.map(s=>'<div class="tot"><b style="color:var(--'+s.v+')">'+data.filter(c=>inColumn(c,s.id)).length+'</b><span>'+s.nome+'</span></div>').join('');
 }
-['q','f-vend','f-uf','f-mes','f-orig'].forEach(id=>{const el=document.getElementById(id);const key=id==='q'?'q':id.split('-')[1];
-  el.addEventListener(id==='q'?'input':'change',e=>{f[key]=e.target.value;render();});});
+// ---- KANBAN drag-and-drop via Supabase ----
+const SB_URL='https://uuhxsafnhiacgmiiwkhz.supabase.co';
+const SB_KEY='sb_publishable_Ug9DzPaNgE5cX2jRzlPHEg_MfP5C3Sl';
+let kanbanState={};
+
+async function loadKanban(){
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/kanban_posicoes?select=lead_id,coluna',
+      {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    if(r.ok){const rows=await r.json();kanbanState={};rows.forEach(row=>{kanbanState[row.lead_id]=row.coluna;});}
+  }catch(e){console.error('Erro ao carregar kanban:',e);}
+}
+
+async function pushKanban(uuid,coluna){
+  const sav=document.getElementById('saving');if(sav)sav.classList.add('show');
+  try{
+    await fetch(SB_URL+'/rest/v1/kanban_posicoes',{method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({lead_id:uuid,coluna:coluna})});
+  }catch(e){console.error('Erro ao salvar:',e);}
+  if(sav)sav.classList.remove('show');
+}
+
+['q','f-vend','f-uf','f-mes','f-orig'].forEach(id=>{
+  const el=document.getElementById(id);
+  const key=id==='q'?'q':id.split('-')[1];
+  el.addEventListener(id==='q'?'input':'change',e=>{f[key]=e.target.value;loadKanban().then(()=>render());});
+});
 render();
 </script>
+<div class="saving" id="saving">💾 Salvando...</div>
 </body>
 </html>"""
 
