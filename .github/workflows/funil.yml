@@ -3,7 +3,7 @@ name: Funil Comercial Weni
 on:
   schedule:
     - cron: '0 15 * * *'   # 12h horário de Brasília (UTC-3)
-    - cron: '0 21 * * *'   # 18h horário de Brasília (UTC-3)
+    - cron: '0 20 * * *'   # 17h horário de Brasília (UTC-3)
   workflow_dispatch:        # permite rodar manualmente também
 
 permissions:
