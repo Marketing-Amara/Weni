@@ -67,7 +67,15 @@ def is_excluded(name):
         return True
     return False
 
-AUTO_PAT = re.compile(r"(?:agradecemos (?:o |seu )?contato|fora do (?:nosso )?hor\u00e1rio|hor\u00e1rio de atendimento|no momento[, ]+n\u00e3o estamos|resposta autom\u00e1tica|atendimento autom\u00e1tico|chave pix|deixe sua mensagem|retornaremos (?:o |seu )?contato|assim que poss\u00edvel retorn|seja bem[- ]vindo ao|voc\u00ea est\u00e1 falando com|menu principal|digite o n\u00famero)", re.I)
+AUTO_PAT = re.compile(
+    r"(?:agradecemos (?:o |seu )?contato|fora do (?:nosso )?hor\u00e1rio|hor\u00e1rio de atendimento|"
+    r"no momento[, ]+n\u00e3o estamos|resposta autom\u00e1tica|atendimento autom\u00e1tico|chave pix|"
+    r"deixe sua mensagem|retornaremos (?:o |seu )?contato|assim que poss\u00edvel retorn|"
+    r"seja bem[- ]vindo\(?a?\)? (?:a|\u00e0|ao)|voc\u00ea est\u00e1 falando com|menu principal|digite o n\u00famero|"
+    r"voc\u00ea entrou em contato com|nosso (?:time|in[i\u00ed]cio)|estarei respons\u00e1vel pelo seu atendimento|"
+    r"aguarde um momento que j\u00e1 iremos|para agilizar seu atendimento|"
+    r"desenvolvemos projetos personalizados|consultor de energia solar|central de atendimento)",
+    re.I)
 AGENT_PREFIX = re.compile(r"^([A-Z\u00c0-\u00dd][a-z\u00e0-\u00fd\u00e7]+):\s*\n")
 BOT_PHRASE = re.compile(r"como voc\u00ea avalia|deixe um coment\u00e1rio|atendimento foi finalizado|assistente virtual|enviei um c\u00f3digo|percebi que talvez|agradecemos a sua colabora|sou a assistente", re.I)
 FLUIG_CLIENT = re.compile(r"\b(fluig)\b|repasse (?:da nota|do pedido|de nota|fiscal)|fazer (?:o )?repasse|preciso (?:do |de )?repasse|sobre (?:o )?repasse", re.I)
@@ -96,14 +104,66 @@ AGENT_PROGRESS = [
  (r"(?:envie?|anexe?|manda?r?)\s*(?:o\s*)?comprovante|ao finalizar (?:pode )?envi", "Atendente pediu comprovante"),
  (r"(?:pode|consegue) finalizar (?:seu |o )?pedido|finalizar (?:a )?compra (?:na plataforma|no site)", "Atendente orientou finalizar"),
 ]
+# Categoria A: intencao explicita / Categoria B: interesse comercial (palavras do usuario)
 CONTATAR = [
- (r"\b(?:fechar|comprar|finalizar)\b[^.!?\n]{0,15}\bagora\b", "Quer fechar/comprar agora", 5),
- (r"\b(?:quero|vou|pretendo|gostaria de|preciso|posso)\b[^.!?\n]{0,30}\b(?:fechar|comprar|finalizar|adquirir|levar|pegar)\b", "Manifestou inten\u00e7\u00e3o de fechar", 4),
- (r"\bdesconto\b|\bnegoci\w+|\bmelhor pre\u00e7o\b|\bcondi\u00e7\u00e3o (?:de pagamento|especial|melhor)\b|\babatimento\b", "Pediu desconto / negociou", 4),
- (r"\bcupom\b", "Falou de cupom", 3),
- (r"\b(?:como (?:fa\u00e7o|posso) (?:para )?comprar|forma de pagamento|como pago|fechar o or\u00e7amento)\b", "Perguntou como comprar/pagar", 3),
- (r"\b(?:fechar|comprar)\b[^.!?\n]{0,20}\b(?:hoje|essa semana|ainda hoje|amanh\u00e3)\b", "Quer fechar em breve", 5),
+ (r"\bcomprar\b", "Categoria A: comprar", 5),
+ (r"\bquero\b", "Categoria A: quero", 4),
+ (r"\bpreciso\b", "Categoria A: preciso", 4),
+ (r"\bfechar\b", "Categoria A: fechar", 5),
+ (r"\bfinalizar\b", "Categoria A: finalizar", 5),
+ (r"\bpedido\b", "Categoria A: pedido", 4),
+ (r"\bor\u00e7amento\b", "Categoria A: or\u00e7amento", 4),
+ (r"\bcontratar\b", "Categoria A: contratar", 4),
+ (r"\badquirir\b", "Categoria A: adquirir", 4),
+ (r"\bpre\u00e7o\b", "Categoria B: pre\u00e7o", 3),
+ (r"\bvalor\b", "Categoria B: valor", 3),
+ (r"\bfrete\b", "Categoria B: frete", 3),
+ (r"\bentrega\b", "Categoria B: entrega", 3),
+ (r"\bdesconto\b", "Categoria B: desconto", 3),
+ (r"\bpromo\u00e7\u00e3o\b", "Categoria B: promo\u00e7\u00e3o", 3),
+ (r"\bparcelamento\b", "Categoria B: parcelamento", 3),
+ (r"\bpix\b", "Categoria B: pix", 3),
+ (r"\bboleto\b", "Categoria B: boleto", 3),
+ (r"\bcart\u00e3o\b", "Categoria B: cart\u00e3o", 3),
+ (r"\bestoque\b", "Categoria B: estoque", 3),
 ]
+
+# Frases que contem palavras da lista mas sao suporte/rastreio, nao intencao de compra
+SUPORTE_PATS = [
+    r"\bpreciso (?:falar|conversar)\s+(?:com|por)\b",
+    r"\bquero (?:falar|conversar)\s+(?:com|por)\b",
+    r"\bquero atendimento humano\b",
+    r"\b(?:consultar|verificar|saber)\s+(?:o\s+)?(?:meu\s+|seu\s+)?pedido\b.*(?:nota fiscal|chegada|rastre|entrega)",
+    r"\brastre(?:ar|io)\b.*pedido",
+    r"\bnota fiscal\b.*(?:pedido|chegada)",
+    r"\bpreciso (?:de\s+)?suporte\b",
+    r"\bd\u00favida t\u00e9cnica\b",
+    r"\bproblema (?:com|no)\b",
+    r"\bn\u00e3o (?:funciona|chegou|recebi)\b",
+    r"\bdigite a op\u00e7\u00e3o\b",
+    r"\b\d\s*-\s*(?:or\u00e7amento|pedido)\b",
+    r"\bbem vindo\(a\) ao atendimento\b",
+]
+SUP = [re.compile(p, re.I) for p in SUPORTE_PATS]
+
+def is_suporte(text):
+    return any(p.search(text) for p in SUP)
+
+# Padroes que indicam que o ATENDENTE avancou a demanda de fato (nao resposta generica)
+AGENT_ADVANCE = [
+ (r"envie?\s*(?:o\s*)?(?:n\u00famero\s*d[eo]\s*)?pedido|n\u00famero do (?:seu )?pedido", "Atendente pediu n\u00ba do pedido"),
+ (r"(?:envie?|anexe?|manda?r?)\s*(?:o\s*)?comprovante|ao finalizar (?:pode )?envi", "Atendente pediu comprovante"),
+ (r"(?:pode|consegue) finalizar (?:seu |o )?pedido|finalizar (?:a )?compra (?:na plataforma|no site)", "Atendente orientou finalizar"),
+ (r"segue (?:o )?(?:or\u00e7amento|proposta|valor)|valor (?:fica|ficou|\u00e9|seria)|(?:o )?pre\u00e7o (?:fica|\u00e9|seria)", "Atendente informou valor/or\u00e7amento"),
+ (r"(?:o )?frete (?:fica|\u00e9|seria|custa)|prazo de entrega (?:\u00e9|fica|seria)", "Atendente informou frete/prazo"),
+ (r"(?:temos|tem) (?:em )?estoque|dispon\u00edvel (?:sim|para entrega)|produto dispon\u00edvel", "Atendente confirmou disponibilidade"),
+ (r"pagamento confirmado com sucesso", "Atendente confirmou pagamento"),
+ (r"seu pedido (?:est\u00e1|foi) (?:confirmado|faturado|em separa\u00e7\u00e3o|em processamento)", "Atendente confirmou pedido"),
+ (r"pedido \*?confirmado\*?", "Atendente confirmou pedido"),
+ (r"pode (?:gerar|fazer|enviar) (?:a )?proposta|proposta comercial (?:enviada|segue)", "Atendente enviou proposta"),
+ (r"desconto (?:de|aplicado|fica|seria)", "Atendente informou desconto"),
+]
+ADV = [(re.compile(p, re.I), d) for p, d in AGENT_ADVANCE]
 ORCAMENTO = [(r"\b(?:or\u00e7amento|or\u00e7ar|or\u00e7a)\b", "Mencionou or\u00e7amento"), (r"\b(?:cota\u00e7\u00e3o|cotar|me cota|cotando)\b", "Pediu cota\u00e7\u00e3o")]
 PERDIDO = [
  (r"comprei\s[^.!?\n]{0,30}(?:na weg|outra empresa|concorrente|outro fornecedor|outro lugar|com a aldo|na aldo|na edeltec)|fechei com (?:outra|outro)", "Comprou no concorrente"),
@@ -200,11 +260,16 @@ def load_contacts(path):
         cn=norm_cnpj(row.get("Field:CNPJ"))
         cidade=clean(row.get("Field:Cidade"))
         if cidade and cidade.isupper(): cidade=cidade.title()
+        is_raw=clean(row.get("Field:Score de intencao de compra") or "")
+        ip_raw=clean(row.get("Field:Prioridade de intencao de compra") or "")
+        try: is_val=int(float(is_raw)) if is_raw else 0
+        except: is_val=0
         m[row["Contact UUID"]]=dict(
             vendedor=clean(row.get("Field:Analista")) or "Sem vendedor",
             cnpj=("%s.%s.%s/%s-%s"%(cn[:2],cn[2:5],cn[5:8],cn[8:12],cn[12:14])) if len(cn)==14 else "",
             cnpj_raw=cn, empresa=razao, regional=clean(row.get("Field:Regional")),
-            uf=clean(row.get("Field:UF")) or clean(row.get("Field:Estado")), cidade=cidade)
+            uf=clean(row.get("Field:UF")) or clean(row.get("Field:Estado")), cidade=cidade,
+            weni_intent_score=is_val, weni_intent_priority=ip_raw)
     return m
 
 def classify(conv_path, ct_map, orders):
@@ -228,7 +293,9 @@ def classify(conv_path, ct_map, orders):
             continue
         in_msgs=[(r["Date"],str(r["Text"])) for _,r in g.iterrows() if r["Direction"]=="IN" and pd.notna(r["Text"]) and not AUTO_PAT.search(str(r["Text"]))]
         out_msgs=[(r["Date"],str(r["Text"])) for _,r in g.iterrows() if r["Direction"]=="OUT" and pd.notna(r["Text"])]
-        hit={"CLOSE":[],"ACLOSE":[],"PROG":[],"CONTATAR":[],"ORCAMENTO":[],"PERDIDO":[]}
+        if not in_msgs:
+            continue
+        hit={"CLOSE":[],"ACLOSE":[],"CONTATAR":[],"ORCAMENTO":[],"PERDIDO":[]}
         ctw=0; deadline=None; iscore=0; idesc=""
         for dt,t in in_msgs:
             for pat,desc in CC:
@@ -237,8 +304,10 @@ def classify(conv_path, ct_map, orders):
                 if pat.search(t):
                     if desc=="Comprou no concorrente" and ELSEWHERE_NEG.search(t): continue
                     hit["PERDIDO"].append((desc,dt,t[:220].strip())); break
-            for pat,desc,w in CT:
-                if pat.search(t): hit["CONTATAR"].append((desc,dt,t[:220].strip())); ctw=max(ctw,w); break
+            # Categoria A/B -- mas filtra suporte/rastreio antes
+            if not is_suporte(t):
+                for pat,desc,w in CT:
+                    if pat.search(t): hit["CONTATAR"].append((desc,dt,t[:220].strip())); ctw=max(ctw,w); break
             for pat,desc in ORG:
                 if pat.search(t): hit["ORCAMENTO"].append((desc,dt,t[:220].strip())); break
             for pat,fn in TP:
@@ -250,36 +319,52 @@ def classify(conv_path, ct_map, orders):
             if "?" not in t.strip()[-60:] and not AGENT_BAD.search(t):
                 for pat,desc in ACR:
                     if pat.search(t): hit["ACLOSE"].append((desc,dt,t[:220].strip())); break
-            for pat,desc in AP:
-                if pat.search(t): hit["PROG"].append((desc,dt,t[:220].strip())); break
-        # real human agent contact?
-        human=[t for _,t in out_msgs if AGENT_PREFIX.match(t) and not BOT_PHRASE.search(t)]
-        seller_replied=len(human)>0
+        # contato so e marcado SUPORTE se TODAS as mencoes de categoria foram filtradas como suporte
+        is_suporte_only = False
+        if not hit["CONTATAR"]:
+            for dt,t in in_msgs:
+                if is_suporte(t):
+                    for pat,desc,w in CT:
+                        if pat.search(t):
+                            is_suporte_only = True
+                            hit["CONTATAR"].append(("SUPORTE:"+desc,dt,t[:220].strip()))
+                            break
+                    if is_suporte_only: break
         name=g["Name"].iloc[0]
         name=name if isinstance(name,str) and name.strip() not in ("",".","$","&") else "(sem nome)"
         meta=ct_map.get(uuid,{}); li=last_info[uuid]
         client_waiting=li["last_dir"]=="IN" and not FLOW_ANSWERS.match(li["last_text"].strip())
         convo_is_fluig=any(FLUIG_CLIENT.search(t) for _,t in in_msgs)
-        cn=meta.get("cnpj_raw","")
-        oi=orders.get(cn,{}); has_order=bool(oi)
-        # FECHADO = a conversa indica fechamento (independente de CNPJ).
-        # fluig/repasse sozinho nao fecha, mas um fechamento explicito do cliente vale.
+        cn=meta.get("cnpj_raw",""); oi=orders.get(cn,{}); has_order=bool(oi)
         convo_closed=bool(hit["CLOSE"]) or bool(hit["ACLOSE"])
         if convo_is_fluig and not hit["CLOSE"]: convo_closed=False
+
+        # atendente avancou a demanda DEPOIS do ultimo sinal de categoria A/B?
+        last_signal_dt = max((e[1] for e in hit["CONTATAR"]), default=None) if hit["CONTATAR"] and not is_suporte_only else None
+        agent_advanced=False; advance_ev=None
+        if last_signal_dt is not None:
+            for dt,t in out_msgs:
+                if dt>last_signal_dt:
+                    for pat,desc in ADV:
+                        if pat.search(t): agent_advanced=True; advance_ev=(desc,dt,t[:220].strip()); break
+                    if agent_advanced: break
+
         if convo_closed:
             stage="FECHADO"; ev=hit["CLOSE"][0] if hit["CLOSE"] else hit["ACLOSE"][0]
             ck="Cliente confirmou" if hit["CLOSE"] else "Atendente confirmou"
         elif hit["PERDIDO"]:
             stage,ev,ck="PERDIDO",hit["PERDIDO"][0],""
-        elif (hit["CONTATAR"] or hit["PROG"]) and seller_replied:
-            stage,ck="ENTROU",""; ev=max(hit["CONTATAR"],key=lambda e:e[1]) if hit["CONTATAR"] else hit["PROG"][-1]
-        elif hit["CONTATAR"] or hit["PROG"]:
-            stage,ck="CONTATAR",""; ev=max(hit["CONTATAR"],key=lambda e:e[1]) if hit["CONTATAR"] else hit["PROG"][-1]
-            if not hit["CONTATAR"]: ctw=max(ctw,4)
+        elif is_suporte_only:
+            stage,ck="SUPORTE",""; ev=hit["CONTATAR"][0]
+        elif hit["CONTATAR"] and agent_advanced:
+            stage,ck="ENTROU",""; ev=advance_ev
+        elif hit["CONTATAR"]:
+            stage,ck="CONTATAR",""; ev=max(hit["CONTATAR"],key=lambda e:e[1])
         elif hit["ORCAMENTO"]:
             stage,ev,ck="ORCAMENTO",hit["ORCAMENTO"][-1],""
         else:
             stage,ev,ck="SEM_SINAL",None,""
+
         contact_date=None; basis=""
         if stage=="CONTATAR":
             last_d=li["last_date"].normalize()
@@ -294,22 +379,34 @@ def classify(conv_path, ct_map, orders):
         contacts.append(dict(uuid=uuid,name=name,urn=str(g["URN"].iloc[0]),
             vendedor=meta.get("vendedor","Sem vendedor"),cnpj=meta.get("cnpj",""),empresa=meta.get("empresa",""),
             regional=meta.get("regional",""),uf=meta.get("uf",""),cidade=meta.get("cidade",""),
+            weni_intent_score=meta.get("weni_intent_score",0),weni_intent_priority=meta.get("weni_intent_priority",""),
             stage=stage,close_kind=ck,ev_desc=ev[0] if ev else "",ev_date=ev[1].strftime("%d/%m/%Y") if ev else "",ev_text=ev[2] if ev else "",
             mencionou_orcamento=bool(hit["ORCAMENTO"]),intent_score=iscore,intent_desc=idesc,
             erp_match=has_order,erp_recent=bool(oi.get("data_iso","") and oi.get("data_iso","")>=period_start),
             order_pedido=oi.get("pedido",""),order_status=oi.get("status",""),order_data=oi.get("data",""),
             last=li["last_date"].strftime("%d/%m/%Y"),last_iso=li["last_date"].strftime("%Y-%m-%d"),last_month=li["last_date"].strftime("%Y-%m"),
-            client_waiting=bool(client_waiting),seller_replied=bool(seller_replied),contacted_at=(li["last_date"].strftime("%d/%m/%Y") if seller_replied else ""),
+            client_waiting=bool(client_waiting),seller_replied=bool(agent_advanced),contacted_at=(advance_ev[1].strftime("%d/%m/%Y") if advance_ev else ""),
             origem="Inbound" if first_dir.get(uuid)=="IN" else "Disparo",
             contact_date=contact_date.strftime("%d/%m/%Y") if contact_date else "",
             contact_date_iso=contact_date.strftime("%Y-%m-%d") if contact_date else "",date_basis=basis))
     return contacts
 
+
 def build_html(contacts, out_path):
     from datetime import datetime, timezone, timedelta
+    import re as _re
     BRT = timezone(timedelta(hours=-3))
     now = datetime.now(tz=BRT).strftime("%d/%m/%Y %H:%M")
-    html=HTML_TEMPLATE.replace("__DATA__", json.dumps(contacts,ensure_ascii=False))
+    # sanitize text fields to avoid unescaped newlines in JS
+    _text_fields = ["ev_text","ev_desc","date_basis","name","empresa","cidade","vendedor","intent_desc","weni_intent_priority"]
+    clean_contacts = []
+    for c in contacts:
+        cc = dict(c)
+        for f in _text_fields:
+            if isinstance(cc.get(f), str):
+                cc[f] = cc[f].replace("\n"," ").replace("\r"," ").replace("\t"," ").replace("\x00","")
+        clean_contacts.append(cc)
+    html=HTML_TEMPLATE.replace("__DATA__", json.dumps(clean_contacts,ensure_ascii=False))
     html=html.replace("__UPDATED__", now)
     with open(out_path,"w",encoding="utf-8") as f: f.write(html)
 
@@ -317,9 +414,9 @@ def build_html(contacts, out_path):
 def build_xlsx(contacts, out_path):
     F="Arial"; C=dict(navy="1F3864",erp="0B6B57",done="0E7C66",grey="6B7280")
     thin=Border(*[Side(style="thin",color="D9D9D9")]*4)
-    PT={"CONTATAR":"Entrar em contato","ATRASADO":"Atrasado","ORCAMENTO":"Mencionou or\u00e7amento","FECHADO":"Fecharam pedido","PERDIDO":"Perdido","ENTROU":"Entrou em contato","SEM_SINAL":"Sem sinal","STALE":"Pendente (m\u00eas ant.)"}
-    COLOR={"CONTATAR":"FBE2CB","ATRASADO":"F8CBCB","ORCAMENTO":"D6E8F5","FECHADO":"C6EFCE","PERDIDO":"E4DCF0","ENTROU":"D6EFE8","SEM_SINAL":"F2F2F2","STALE":"EFEFEF"}
-    order={"CONTATAR":0,"ATRASADO":1,"ORCAMENTO":2,"FECHADO":3,"PERDIDO":4,"ENTROU":5,"STALE":6,"SEM_SINAL":7}
+    PT={"CONTATAR":"Entrar em contato","ATRASADO":"Atrasado","ORCAMENTO":"Mencionou or\u00e7amento","FECHADO":"Fecharam pedido","PERDIDO":"Perdido","ENTROU":"Entrou em contato","SUPORTE":"Pedido suporte/atendimento","SEM_SINAL":"Sem sinal","STALE":"Pendente (m\u00eas ant.)"}
+    COLOR={"CONTATAR":"FBE2CB","ATRASADO":"F8CBCB","ORCAMENTO":"D6E8F5","FECHADO":"C6EFCE","PERDIDO":"E4DCF0","ENTROU":"D6EFE8","SUPORTE":"E6E0F0","SEM_SINAL":"F2F2F2","STALE":"EFEFEF"}
+    order={"CONTATAR":0,"ATRASADO":1,"ORCAMENTO":2,"FECHADO":3,"PERDIDO":4,"ENTROU":5,"SUPORTE":6,"STALE":7,"SEM_SINAL":8}
     icolor={5:"1E7A4F",4:"C75B12",3:"A8860B"}
     now=datetime.now(); ws_=now.replace(hour=0,minute=0,second=0,microsecond=0)
     week_start=ws_-timedelta(days=ws_.weekday()); month_start=now.replace(day=1,hour=0,minute=0,second=0,microsecond=0)
@@ -433,6 +530,7 @@ def main():
     print("   Confirmado no ERP (CNPJ):   %d"%erp)
     print("   Entrar em contato:        %d"%cnt.get("CONTATAR",0))
     print("   Entrou em contato:        %d"%cnt.get("ENTROU",0))
+    print("   Pedido suporte/atendim.:  %d"%cnt.get("SUPORTE",0))
     print("   Mencionou orcamento:      %d"%cnt.get("ORCAMENTO",0))
     print("   Perdidos:                 %d"%cnt.get("PERDIDO",0))
     print("\nArquivos em: %s"%os.path.abspath(a.output))
@@ -509,6 +607,14 @@ footer b{color:var(--ink)}
 .col-drop-over{background:rgba(22,36,58,.06);border-radius:8px;outline:2px dashed var(--ink-soft)}
 .saving{position:fixed;bottom:16px;right:16px;background:var(--ink);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-family:'IBM Plex Mono',monospace;z-index:99;opacity:0;transition:opacity .3s}
 .saving.show{opacity:1}
+.intent-bar-wrap{margin-top:8px}
+.intent-label{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;margin-bottom:3px}
+.intent-label .pri{font-weight:700;padding:1px 7px;border-radius:999px;font-size:10px}
+.pri.alta{background:#FBE4E3;color:#B0322E}
+.pri.media{background:#FBEADB;color:#C75B12}
+.pri.baixa{background:#F7F0D4;color:#A8860B}
+.intent-bar{height:5px;background:#E2E6E1;border-radius:3px;overflow:hidden}
+.intent-bar i{display:block;height:100%;border-radius:3px;transition:width .4s}
 </style>
 </head>
 <body>
@@ -596,6 +702,20 @@ function filtra(){
 }
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function weekOf(iso){const d=parseISO(iso);const s=startOfWeek(d);const e=new Date(s);e.setDate(s.getDate()+4);return fmt(s)+'–'+fmt(e);}
+function intentBar(score,priority){
+  const p=(priority||'').toLowerCase();
+  const priClass=p.includes('alta')?'alta':p.includes('media')||p.includes('média')?'media':'baixa';
+  const priLabel=p.includes('alta')?'Alta':p.includes('media')||p.includes('média')?'Média':p?'Baixa':'';
+  const barColor=priClass==='alta'?'var(--over)':priClass==='media'?'var(--call)':'var(--warm,#A8860B)';
+  const pct=Math.min(score,100);
+  return '<div class="intent-bar-wrap">'
+    +'<div class="intent-label">'
+    +'<span style="color:var(--ink-soft)">Score Weni: <b>'+score+'</b></span>'
+    +(priLabel?'<span class="pri '+priClass+'">'+priLabel+'</span>':'')
+    +'</div>'
+    +'<div class="intent-bar"><i style="width:'+pct+'%;background:'+barColor+'"></i></div>'
+    +'</div>';
+}
 function card(c,v,isErpCol){
   const d=document.createElement('article');
   d.className='card';d.tabIndex=0;d.style.setProperty('--tier','var(--'+v+')');
@@ -611,7 +731,7 @@ function card(c,v,isErpCol){
     orderHtml='<div class="orderbox"><div class="ped">✓ Pedido '+esc(c.order_pedido)+'</div>'
       +'<div class="st">'+esc(c.order_status)+' · '+esc(c.order_data)+'</div></div>';
   }
-  const stageLabel={CONTATAR:'Entrar em contato',ENTROU:'Entrou',ORCAMENTO:'Orçamento',FECHADO:'Fechou',PERDIDO:'Perdido',SEM_SINAL:'Sem sinal'};
+  const stageLabel={CONTATAR:'Entrar em contato',ENTROU:'Entrou',ORCAMENTO:'Orçamento',FECHADO:'Fechou',PERDIDO:'Perdido',SUPORTE:'Suporte/atendimento',SEM_SINAL:'Sem sinal'};
   let badges=[];
   if(c.uf)badges.push('<span class="b uf">'+esc(c.uf)+'</span>');
   if(c.vendedor)badges.push('<span class="b sell">'+esc(c.vendedor)+'</span>');
@@ -628,6 +748,7 @@ function card(c,v,isErpCol){
     +'<div class="uuid">'+esc(c.uuid)+'</div></div>'+iscore+'</div>'
     +dateHtml+orderHtml
     +'<div class="badges">'+badges.join('')+'</div>'
+    +(c.weni_intent_score>0?intentBar(c.weni_intent_score,c.weni_intent_priority):'')
     +'<div class="reason">últ. msg '+esc(c.last)+(c.client_waiting?' · cliente aguarda':'')+'</div>'
     +'<div class="evid">'+(c.ev_desc?'<div class="why">'+esc(c.ev_desc)+' · '+esc(c.ev_date)+'</div><q>"'+esc(c.ev_text)+'"</q>':'<q>Sem evidência de fechamento na conversa.</q>')
     +(c.intent_score?'<div class="extra">Intenção: <b>'+c.intent_score+'/5</b> — '+esc(c.intent_desc)+'</div>':'')
