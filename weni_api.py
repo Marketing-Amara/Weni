@@ -99,6 +99,8 @@ def fetch_all(url, token, params=None, rotulo=""):
     pagina = 0
     proxima = url
     primeira_params = dict(params or {})
+    tentativas_erro = 0
+    MAX_TENTATIVAS = 5
 
     while proxima:
         pagina += 1
@@ -109,11 +111,27 @@ def fetch_all(url, token, params=None, rotulo=""):
                 # nas proximas paginas a URL ja vem completa com o cursor
                 resp = requests.get(proxima, headers=headers, timeout=60)
         except requests.RequestException as e:
-            sys.exit("Erro de conexao ao buscar %s: %s" % (rotulo, e))
+            tentativas_erro += 1
+            if tentativas_erro > MAX_TENTATIVAS:
+                sys.exit("Erro de conexao ao buscar %s apos %d tentativas: %s" % (rotulo, MAX_TENTATIVAS, e))
+            espera = min(10 * tentativas_erro, 60)
+            print("   erro de conexao em %s, tentativa %d/%d, aguardando %ds..." % (rotulo, tentativas_erro, MAX_TENTATIVAS, espera))
+            time.sleep(espera)
+            pagina -= 1
+            continue
 
         if resp.status_code == 429:  # rate limit
             espera = int(resp.headers.get("Retry-After", 60))
             print("   limite de chamadas atingido, aguardando %ds..." % espera)
+            time.sleep(espera)
+            pagina -= 1
+            continue
+        if resp.status_code in (502, 503, 504):  # erro temporario do servidor da Weni
+            tentativas_erro += 1
+            if tentativas_erro > MAX_TENTATIVAS:
+                sys.exit("Erro %d persistente ao buscar %s apos %d tentativas." % (resp.status_code, rotulo, MAX_TENTATIVAS))
+            espera = min(15 * tentativas_erro, 90)
+            print("   erro %d (temporario) em %s, tentativa %d/%d, aguardando %ds..." % (resp.status_code, rotulo, tentativas_erro, MAX_TENTATIVAS, espera))
             time.sleep(espera)
             pagina -= 1
             continue
@@ -122,6 +140,7 @@ def fetch_all(url, token, params=None, rotulo=""):
         if resp.status_code != 200:
             sys.exit("Erro %d ao buscar %s: %s" % (resp.status_code, rotulo, resp.text[:300]))
 
+        tentativas_erro = 0  # reset apos sucesso
         data = resp.json()
         lote = data.get("results", [])
         resultados.extend(lote)
@@ -172,6 +191,10 @@ FIELD_MAP = {
     "nomefantasia": "Field:Nome Fantasia",
     "hunter":      "Field:Hunter",
     "sellers":     "Field:Sellers",
+    "prioridade de intencao de compra": "Field:Prioridade de intencao de compra",
+    "score de intencao de compra":      "Field:Score de intencao de compra",
+    "purchase_intent_priority":         "Field:Prioridade de intencao de compra",
+    "purchase_intent_score":            "Field:Score de intencao de compra",
 }
 
 
