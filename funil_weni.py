@@ -691,7 +691,7 @@ footer b{color:var(--ink)}
   <h1>Funil Comercial</h1>
   <div class="sub">Internos e contas de teste removidos. Funil pela conversa + bloco ERP por CNPJ. Padrão: mês vigente.</div>
   <div class="weeknow" id="weeknow"></div>
-  <div class="weeknow" style="margin-left:8px;background:#2E4057" id="updated">Atualizado em: 17/06/2026 09:24</div>
+  <div class="weeknow" style="margin-left:8px;background:#2E4057" id="updated">Atualizado em: __UPDATED__</div>
   <div class="totais" id="totais"></div>
 </header>
 <div class="controls">
