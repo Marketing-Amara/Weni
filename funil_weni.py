@@ -648,6 +648,7 @@ footer b{color:var(--ink)}
 .dot{width:13px;height:13px;border-radius:4px;display:inline-block}
 .col-body{min-height:60px}
 .card{cursor:grab}
+.card .nm,.card .tel,.card .uuid,.card .reason,.card .evid,.card .extra,.card .why,.card q{cursor:text;user-select:text}
 .card.dragging{opacity:.4;cursor:grabbing}
 .col-drop-over{background:rgba(22,36,58,.06);border-radius:8px;outline:2px dashed var(--ink-soft)}
 .msel{position:relative;display:flex;align-items:center;gap:6px}
@@ -891,18 +892,18 @@ function card(c,v,isErpCol){
   const t=()=>d.classList.toggle('open');
   let _dragged=false;
   d.dataset.uuid=c.uuid;
-  // draggable so e desativado durante selecao de texto: comeca true, mas se o
-  // mousedown ocorrer sobre texto selecionavel (nm/tel/reason/evid) o navegador
-  // ainda intercepta corretamente porque so DESLIGAMOS o draggable quando ha
-  // uma selecao de texto ativa no momento do mousedown seguinte.
-  d.setAttribute('draggable','true');
+  // draggable comeca DESLIGADO. So ligamos no mousedown se o clique NAO
+  // comecou em um campo de texto selecionavel -- assim duplo-clique e
+  // selecao com o mouse (nome, telefone, CNPJ, etc) funcionam normalmente,
+  // e arrastar pelas bordas/areas sem texto ainda move o card.
+  d.setAttribute('draggable','false');
+  const TEXT_SEL='.nm,.tel,.reason,.evid,.uuid,.extra,.why,q,.badges,.b';
   d.addEventListener('mousedown',e=>{
-    // se o clique comecar dentro de uma area de texto e nao houver intencao clara de arrastar,
-    // desativa draggable por um instante para permitir selecionar o texto livremente
-    if(e.target.closest('.nm,.tel,.reason,.evid,.uuid,.extra,.why,q')){
-      d.setAttribute('draggable','false');
-      setTimeout(()=>d.setAttribute('draggable','true'),300);
-    }
+    d.setAttribute('draggable', e.target.closest(TEXT_SEL) ? 'false' : 'true');
+  });
+  d.addEventListener('dblclick',e=>{
+    // duplo clique sempre seleciona a palavra/texto, nunca abre o card
+    e.stopPropagation();
   });
   d.addEventListener('dragstart',e=>{e.dataTransfer.setData('uuid',c.uuid);d.classList.add('dragging');_dragged=true;});
   d.addEventListener('dragend',()=>{d.classList.remove('dragging');setTimeout(()=>{_dragged=false;},50);});
