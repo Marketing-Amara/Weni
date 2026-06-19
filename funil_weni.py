@@ -272,6 +272,50 @@ def load_contacts(path):
             weni_intent_score=is_val, weni_intent_priority=ip_raw)
     return m
 
+
+# Mapa Vendedor -> Time, usando o nome EXATO como aparece em Field:Analista
+# (truncado em 25 caracteres pela Weni). Conferido contra a base real de contatos.
+TEAM_MAP = {
+    "RAFAELA PEREIRA DE MENEZE": "Digital",
+    "GABRIEL BORGES DOS SANTOS": "Digital",
+    "VANESSA VIEIRA DE CARVALH": "Digital",
+    "BRUNO RICARDO CONCEICAO B": "Digital",
+    "MARCELO SOUZA FERREIRA DI": "Digital",
+    "ANDRESSA CLICIA DE JESUS":  "Digital",
+    "KALILA DOS SANTOS CAETANO": "Digital",
+    "LUANA CASTILHO RIBEIRO":    "Digital",
+    "RAINEI TRINDADE DE SOUZA":  "Digital",
+    "CELENE CARMO DOS SANTOS":   "Digital",
+    "ELEN DA CRUZ SANTOS":       "Digital",
+    "VICTORIA STEPHANIE SILVA SANTOS": "Digital",
+    "KAREN GOMES SOUZA":         "Digital",
+    "MAIANE MATOS MELO":         "Consultivo",
+    "RAFAELA FERNANDES FERREIR": "Consultivo",
+    "LIANDRA LOPES DE SOUSA":    "Consultivo",
+    "LUIS HENRIQUE FERREIRA SA": "Consultivo",
+    "LUANA ELIZABETT DE SANTAN": "Consultivo",
+    "ALINE MIEKO MIYASHIRO HIG": "Consultivo",
+    "BRUNA APARECIDA DOS SANTO": "Consultivo",
+    "JORDANA BAIAO":             "Consultivo",
+    "THAMIRES FERNANDA SOARES":  "Consultivo",
+    "TIAGO DE OLIVEIRA JACINTO": "Consultivo",
+    "ELMA EDLLA":                "Consultivo",
+    "ARIELSON SANTANA":          "Consultivo",
+    "NARA RIBEIRO COSTA ALBUQU": "Consultivo",
+    "BRUNO FELIPE OLIVEIRA DE":  "Consultivo",
+    "LUCAS MASSIAS FREITAS":     "Consultivo",
+    "JOYCE SANTOS OLIVEIRA":     "Grandes Usinas/BESS",
+    "NARA ELZIRA OLIVEIRA DE S": "Grandes Usinas/BESS",
+    "AMARA BRASIL SSA":          "Outros",
+    "VITOR BERTIN TEIXEIRA":     "Outros",
+}
+
+def team_of(vendedor):
+    if not vendedor or vendedor == "Sem vendedor":
+        return "S/ Vendedor"
+    return TEAM_MAP.get(vendedor.strip(), "Outros")
+
+
 def classify(conv_path, ct_map, orders):
     df=pd.read_excel(conv_path); df["Date"]=pd.to_datetime(df["Date"])
     df=df[df["Channel"].str.contains(PRODUCTION_CHANNEL,na=False)]
@@ -380,6 +424,7 @@ def classify(conv_path, ct_map, orders):
             vendedor=meta.get("vendedor","Sem vendedor"),cnpj=meta.get("cnpj",""),empresa=meta.get("empresa",""),
             regional=meta.get("regional",""),uf=meta.get("uf",""),cidade=meta.get("cidade",""),
             weni_intent_score=meta.get("weni_intent_score",0),weni_intent_priority=meta.get("weni_intent_priority",""),
+            team=team_of(meta.get("vendedor","Sem vendedor")),
             stage=stage,close_kind=ck,ev_desc=ev[0] if ev else "",ev_date=ev[1].strftime("%d/%m/%Y") if ev else "",ev_text=ev[2] if ev else "",
             mencionou_orcamento=bool(hit["ORCAMENTO"]),intent_score=iscore,intent_desc=idesc,
             erp_match=has_order,erp_recent=bool(oi.get("data_iso","") and oi.get("data_iso","")>=period_start),
@@ -623,11 +668,12 @@ footer b{color:var(--ink)}
   <h1>Funil Comercial</h1>
   <div class="sub">Internos e contas de teste removidos. Funil pela conversa + bloco ERP por CNPJ. Padrão: mês vigente.</div>
   <div class="weeknow" id="weeknow"></div>
-  <div class="weeknow" style="margin-left:8px;background:#2E4057" id="updated">Atualizado em: __UPDATED__</div>
+  <div class="weeknow" style="margin-left:8px;background:#2E4057" id="updated">Atualizado em: 17/06/2026 09:24</div>
   <div class="totais" id="totais"></div>
 </header>
 <div class="controls">
   <input type="search" id="q" placeholder="Buscar nome, telefone, empresa, CNPJ ou cidade…">
+  <label>Time</label><select id="f-time"><option value="">Todos</option><option value="Digital">Digital</option><option value="Consultivo">Consultivo</option><option value="Grandes Usinas/BESS">Grandes Usinas/BESS</option><option value="Outros">Outros</option><option value="S/ Vendedor">S/ Vendedor</option></select>
   <label>Vendedor</label><select id="f-vend"><option value="">Todos</option></select>
   <label>UF</label><select id="f-uf"><option value="">Todas</option></select>
   <label>Mês</label><select id="f-mes"><option value="">Todos</option></select>
@@ -690,11 +736,11 @@ const sm=document.getElementById('f-mes');
 const CUR_MONTH=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');})();
 sm.value=CUR_MONTH;
 // ---- filter state — mes pre-set to current month ----
-let f={q:'',vend:'',uf:'',mes:CUR_MONTH,orig:''};
+let f={q:'',vend:'',uf:'',mes:CUR_MONTH,orig:'',time:''};
 function filtra(){
   const q=f.q.toLowerCase();
   return DATA.filter(c=>
-    (!f.vend||c.vendedor===f.vend)&&
+    (!f.vend||c.vendedor===f.vend)&&(!f.time||c.team===f.time)&&
     (!f.uf||c.uf===f.uf)&&
     (!f.mes||c.last_month===f.mes)&&
     (!f.orig||c.origem===f.orig)&&
@@ -805,7 +851,7 @@ function render(){
 }
 // ---- KANBAN drag-and-drop via Supabase ----
 const SB_URL='https://uuhxsafnhiacgmiiwkhz.supabase.co';
-const SB_KEY='sb_publishable_Ug9DzPaNgE5cX2jRzlPHEg_MfP5C3Sl';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1aHhzYWZuaGlhY2dtaWl3a2h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NDg5MDAsImV4cCI6MjA5NzEyNDkwMH0.Y7i4f60vK67DlSHJB2CrTiW31VtNWHCQmEGTte0_GT4';
 let kanbanState={};
 
 async function loadKanban(){
@@ -826,10 +872,14 @@ async function pushKanban(uuid,coluna){
   if(sav)sav.classList.remove('show');
 }
 
-['q','f-vend','f-uf','f-mes','f-orig'].forEach(id=>{
+['q','f-vend','f-uf','f-mes','f-orig','f-time'].forEach(id=>{
   const el=document.getElementById(id);
   const key=id==='q'?'q':id.split('-')[1];
-  el.addEventListener(id==='q'?'input':'change',e=>{f[key]=e.target.value;loadKanban().then(()=>render());});
+  el.addEventListener(id==='q'?'input':'change',e=>{
+    f[key]=e.target.value;
+    if(id==='f-time'){populaVendedores(e.target.value);f.vend=sv.value;}
+    render();
+  });
 });
 render();
 </script>
