@@ -100,7 +100,7 @@ def fetch_all(url, token, params=None, rotulo=""):
     proxima = url
     primeira_params = dict(params or {})
     tentativas_erro = 0
-    MAX_TENTATIVAS = 5
+    MAX_TENTATIVAS = 8
 
     while proxima:
         pagina += 1
@@ -126,11 +126,11 @@ def fetch_all(url, token, params=None, rotulo=""):
             time.sleep(espera)
             pagina -= 1
             continue
-        if resp.status_code in (502, 503, 504):  # erro temporario do servidor da Weni
+        if resp.status_code in (500, 502, 503, 504):  # erro temporario do servidor da Weni
             tentativas_erro += 1
             if tentativas_erro > MAX_TENTATIVAS:
                 sys.exit("Erro %d persistente ao buscar %s apos %d tentativas." % (resp.status_code, rotulo, MAX_TENTATIVAS))
-            espera = min(15 * tentativas_erro, 90)
+            espera = min(15 * tentativas_erro, 120)
             print("   erro %d (temporario) em %s, tentativa %d/%d, aguardando %ds..." % (resp.status_code, rotulo, tentativas_erro, MAX_TENTATIVAS, espera))
             time.sleep(espera)
             pagina -= 1
