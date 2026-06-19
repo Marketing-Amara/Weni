@@ -650,6 +650,28 @@ footer b{color:var(--ink)}
 .card{cursor:grab}
 .card.dragging{opacity:.4;cursor:grabbing}
 .col-drop-over{background:rgba(22,36,58,.06);border-radius:8px;outline:2px dashed var(--ink-soft)}
+.msel{position:relative;display:flex;align-items:center;gap:6px}
+.msel-btn{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;color:var(--ink);cursor:pointer;min-width:90px;text-align:left;font-size:13px}
+.msel-btn:hover{border-color:var(--ink-soft)}
+.msel-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(22,36,58,.15);z-index:50;min-width:200px;max-height:280px;overflow-y:auto;padding:6px}
+.msel.open .msel-panel{display:block}
+.msel-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px}
+.msel-opt:hover{background:#F2F4F2}
+.msel-opt input{cursor:pointer}
+.msel-actions{display:flex;justify-content:space-between;padding:4px 8px 6px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.msel-actions button{font-size:11px;color:var(--ink-soft);background:none;border:none;cursor:pointer;text-decoration:underline}
+.card-menu-btn{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:5px;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center}
+.card-menu-btn:hover{background:#EDF0F2}
+.card{position:relative}
+.card-menu{display:none;position:absolute;top:32px;right:8px;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(22,36,58,.18);z-index:60;min-width:180px;padding:4px;font-size:12.5px}
+.card-menu.open{display:block}
+.card-menu button{display:block;width:100%;text-align:left;padding:7px 10px;border:none;background:none;cursor:pointer;border-radius:6px;color:var(--ink)}
+.card-menu button:hover{background:#F2F4F2}
+.card-menu .sep{border-top:1px solid var(--line);margin:4px 0}
+.card-menu .submenu{display:none;padding-left:8px}
+.card-menu .submenu.open{display:block}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 18px;border-radius:8px;font-size:12.5px;z-index:200;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:1}
 .saving{position:fixed;bottom:16px;right:16px;background:var(--ink);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-family:'IBM Plex Mono',monospace;z-index:99;opacity:0;transition:opacity .3s}
 .saving.show{opacity:1}
 .intent-bar-wrap{margin-top:8px}
@@ -673,11 +695,11 @@ footer b{color:var(--ink)}
 </header>
 <div class="controls">
   <input type="search" id="q" placeholder="Buscar nome, telefone, empresa, CNPJ ou cidade…">
-  <label>Time</label><select id="f-time"><option value="">Todos</option><option value="Digital">Digital</option><option value="Consultivo">Consultivo</option><option value="Grandes Usinas/BESS">Grandes Usinas/BESS</option><option value="Outros">Outros</option><option value="S/ Vendedor">S/ Vendedor</option></select>
-  <label>Vendedor</label><select id="f-vend"><option value="">Todos</option></select>
-  <label>UF</label><select id="f-uf"><option value="">Todas</option></select>
-  <label>Mês</label><select id="f-mes"><option value="">Todos</option></select>
-  <label>Origem</label><select id="f-orig"><option value="">Todas</option><option value="Inbound">Inbound</option><option value="Disparo">Disparo</option></select>
+  <div class="msel" id="msel-time"><label>Time</label><button class="msel-btn" type="button">Todos</button><div class="msel-panel"></div></div>
+  <div class="msel" id="msel-vend"><label>Vendedor</label><button class="msel-btn" type="button">Todos</button><div class="msel-panel"></div></div>
+  <div class="msel" id="msel-uf"><label>UF</label><button class="msel-btn" type="button">Todas</button><div class="msel-panel"></div></div>
+  <div class="msel" id="msel-mes"><label>Mês</label><button class="msel-btn" type="button">Todos</button><div class="msel-panel"></div></div>
+  <div class="msel" id="msel-orig"><label>Origem</label><button class="msel-btn" type="button">Todas</button><div class="msel-panel"></div></div>
 </div>
 <div class="board" id="board"></div>
 <footer>
@@ -725,25 +747,84 @@ const STAGES=[
 const ICOLOR={5:'var(--i5)',4:'var(--i4)',3:'var(--i3)'};
 const shown=Object.fromEntries(STAGES.map(s=>[s.id,(s.id==='ORCAMENTO'||s.id==='ENTROU'||s.id==='ERP')?60:1e9]));
 // ---- populate selects ----
-const sv=document.getElementById('f-vend');
-[...new Set(DATA.map(c=>c.vendedor))].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;sv.appendChild(o);});
-const suf=document.getElementById('f-uf');
-[...new Set(DATA.map(c=>c.uf).filter(Boolean))].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;suf.appendChild(o);});
 const MES_PT={'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
-const sm=document.getElementById('f-mes');
-[...new Set(DATA.map(c=>c.last_month))].sort().reverse().forEach(m=>{const o=document.createElement('option');o.value=m;const[y,mm]=m.split('-');o.textContent=MES_PT[mm]+'/'+y;sm.appendChild(o);});
-// CUR_MONTH defined AFTER sm is built so sm.value assignment works
 const CUR_MONTH=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');})();
-sm.value=CUR_MONTH;
-// ---- filter state — mes pre-set to current month ----
-let f={q:'',vend:'',uf:'',mes:CUR_MONTH,orig:'',time:''};
+// ---- filter state: vend/uf/mes/orig sao arrays (multi-selecao); time/q sao unicos ----
+let f={q:'',vend:[],uf:[],mes:[CUR_MONTH],orig:[],time:[]};
+
+function mesLabel(m){const[y,mm]=m.split('-');return MES_PT[mm]+'/'+y;}
+
+// ---- componente de multi-selecao (dropdown com checkboxes) ----
+function buildMsel(id,getOptions,filterKey){
+  const root=document.getElementById('msel-'+id);
+  const btn=root.querySelector('.msel-btn');
+  const panel=root.querySelector('.msel-panel');
+  function getLabelFor(v){const opts=getOptions();const o=opts.find(o=>o.v===v);return o?o.label:v;}
+  function renderPanel(){
+    const opts=getOptions();
+    panel.innerHTML='<div class="msel-actions"><button type="button" data-act="all">Marcar todos</button><button type="button" data-act="none">Limpar</button></div>'
+      +opts.map(o=>'<label class="msel-opt"><input type="checkbox" value="'+o.v+'" '+(f[filterKey].includes(o.v)?'checked':'')+'> '+o.label+'</label>').join('');
+    panel.querySelector('[data-act="all"]').onclick=()=>{
+      f[filterKey]=opts.map(o=>o.v);renderPanel();updateBtn();
+      if(id==='time'){const pool=new Set(DATA.filter(c=>f.time.includes(c.team)).map(c=>c.vendedor));f.vend=f.vend.filter(v=>pool.has(v));mselVend.updateBtn();}
+      render();
+    };
+    panel.querySelector('[data-act="none"]').onclick=()=>{
+      f[filterKey]=[];renderPanel();updateBtn();
+      if(id==='time'){mselVend.updateBtn();}
+      render();
+    };
+    panel.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+      cb.addEventListener('change',()=>{
+        if(cb.checked){if(!f[filterKey].includes(cb.value))f[filterKey].push(cb.value);}
+        else{f[filterKey]=f[filterKey].filter(v=>v!==cb.value);}
+        updateBtn();
+        if(id==='time'){
+          // ao trocar Time, remove da selecao de vendedor quem nao pertence mais aos times escolhidos
+          const pool=f.time.length?new Set(DATA.filter(c=>f.time.includes(c.team)).map(c=>c.vendedor)):null;
+          if(pool) f.vend=f.vend.filter(v=>pool.has(v));
+          mselVend.updateBtn();
+        }
+        render();
+      });
+    });
+  }
+  function updateBtn(){
+    const n=f[filterKey].length;
+    const allLabel=(id==='vend'||id==='mes'||id==='time')?'Todos':'Todas';
+    btn.textContent = n===0 ? allLabel : (n===1 ? getLabelFor(f[filterKey][0]) : n+' selecionados');
+  }
+  btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    const wasOpen=root.classList.contains('open');
+    document.querySelectorAll('.msel.open').forEach(m=>m.classList.remove('open'));
+    if(!wasOpen){renderPanel();root.classList.add('open');}
+  });
+  document.addEventListener('click',e=>{if(!root.contains(e.target))root.classList.remove('open');});
+  updateBtn();
+  return {renderPanel,updateBtn};
+}
+
+const mselTime=buildMsel('time',()=>[
+  {v:'Digital',label:'Digital'},{v:'Consultivo',label:'Consultivo'},
+  {v:'Grandes Usinas/BESS',label:'Grandes Usinas/BESS'},{v:'Outros',label:'Outros'},
+  {v:'S/ Vendedor',label:'S/ Vendedor'}
+],'time');
+const mselVend=buildMsel('vend',()=>{
+  const pool=f.time.length?DATA.filter(c=>f.time.includes(c.team)):DATA;
+  return [...new Set(pool.map(c=>c.vendedor))].sort().map(v=>({v,label:v}));
+},'vend');
+const mselUf=buildMsel('uf',()=>[...new Set(DATA.map(c=>c.uf).filter(Boolean))].sort().map(v=>({v,label:v})),'uf');
+const mselMes=buildMsel('mes',()=>[...new Set(DATA.map(c=>c.last_month))].sort().reverse().map(v=>({v,label:mesLabel(v)})),'mes');
+const mselOrig=buildMsel('orig',()=>[{v:'Inbound',label:'Inbound'},{v:'Disparo',label:'Disparo'}],'orig');
+
 function filtra(){
   const q=f.q.toLowerCase();
   return DATA.filter(c=>
-    (!f.vend||c.vendedor===f.vend)&&(!f.time||c.team===f.time)&&
-    (!f.uf||c.uf===f.uf)&&
-    (!f.mes||c.last_month===f.mes)&&
-    (!f.orig||c.origem===f.orig)&&
+    (f.vend.length===0||f.vend.includes(c.vendedor))&&(f.time.length===0||f.time.includes(c.team))&&
+    (f.uf.length===0||f.uf.includes(c.uf))&&
+    (f.mes.length===0||f.mes.includes(c.last_month))&&
+    (f.orig.length===0||f.orig.includes(c.origem))&&
     (!q||c.name.toLowerCase().includes(q)||c.urn.includes(q)||(c.empresa||'').toLowerCase().includes(q)||(c.cnpj||'').includes(q)||(c.cidade||'').toLowerCase().includes(q)));
 }
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
@@ -786,7 +867,15 @@ function card(c,v,isErpCol){
   if(c.origem==='Inbound')badges.push('<span class="b inb">Inbound</span>');
   if(c.mencionou_orcamento&&c.stage!=='ORCAMENTO'&&!isErpCol)badges.push('<span class="b orc">Tem orçamento</span>');
   const iscore=c.intent_score?'<div class="iscore" style="background:'+ICOLOR[c.intent_score]+'" title="Intenção '+c.intent_score+'/5">'+c.intent_score+'</div>':'';
-  d.innerHTML='<div class="cardtop"><div>'
+  d.innerHTML='<button type="button" class="card-menu-btn" data-act="menu">⋮</button>'
+    +'<div class="card-menu" data-menu>'
+    +'<button type="button" data-act="copy">📋 Copiar dados</button>'
+    +'<button type="button" data-act="move">↔️ Mover para...</button>'
+    +'<div class="submenu" data-submenu>'
+    +STAGES.filter(s=>s.id!=="ERP").map(s=>'<button type="button" data-move-to="'+s.id+'" style="padding-left:18px;font-size:12px">'+s.nome+'</button>').join('')
+    +'</div>'
+    +'</div>'
+    +'<div class="cardtop"><div>'
     +'<div class="nm">'+esc(c.name)+'</div>'
     +(c.empresa?'<div class="tel">'+esc(c.empresa)+'</div>':'')
     +'<div class="tel">'+esc(c.urn)+(c.cidade?' · '+esc(c.cidade):'')+(c.uf?'/'+esc(c.uf):'')+'</div>'
@@ -801,12 +890,73 @@ function card(c,v,isErpCol){
     +'<div class="extra">Vendedor: '+esc(c.vendedor)+(c.cnpj?' · CNPJ: '+esc(c.cnpj):'')+(c.erp_match?' · Pedido ERP: '+esc(c.order_pedido)+' ('+esc(c.order_status)+')':'')+'</div></div>';
   const t=()=>d.classList.toggle('open');
   let _dragged=false;
-  d.setAttribute('draggable','true');d.dataset.uuid=c.uuid;
+  d.dataset.uuid=c.uuid;
+  // draggable so e desativado durante selecao de texto: comeca true, mas se o
+  // mousedown ocorrer sobre texto selecionavel (nm/tel/reason/evid) o navegador
+  // ainda intercepta corretamente porque so DESLIGAMOS o draggable quando ha
+  // uma selecao de texto ativa no momento do mousedown seguinte.
+  d.setAttribute('draggable','true');
+  d.addEventListener('mousedown',e=>{
+    // se o clique comecar dentro de uma area de texto e nao houver intencao clara de arrastar,
+    // desativa draggable por um instante para permitir selecionar o texto livremente
+    if(e.target.closest('.nm,.tel,.reason,.evid,.uuid,.extra,.why,q')){
+      d.setAttribute('draggable','false');
+      setTimeout(()=>d.setAttribute('draggable','true'),300);
+    }
+  });
   d.addEventListener('dragstart',e=>{e.dataTransfer.setData('uuid',c.uuid);d.classList.add('dragging');_dragged=true;});
   d.addEventListener('dragend',()=>{d.classList.remove('dragging');setTimeout(()=>{_dragged=false;},50);});
-  d.addEventListener('click',()=>{if(!_dragged)d.classList.toggle('open');});
+  d.addEventListener('click',e=>{
+    if(e.target.closest('[data-act],[data-move-to]'))return; // clique no menu nao abre/fecha o card
+    if(window.getSelection&&window.getSelection().toString().length>0)return; // nao fecha se acabou de selecionar texto
+    if(!_dragged)d.classList.toggle('open');
+  });
   d.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();d.classList.toggle('open');}});
+
+  // ---- menu de copiar/mover ----
+  const menuBtn=d.querySelector('[data-act="menu"]');
+  const menu=d.querySelector('[data-menu]');
+  const submenu=d.querySelector('[data-submenu]');
+  menuBtn.addEventListener('click',e=>{
+    e.stopPropagation();
+    document.querySelectorAll('.card-menu.open').forEach(m=>{if(m!==menu)m.classList.remove('open');});
+    submenu.classList.remove('open');
+    menu.classList.toggle('open');
+  });
+  menu.querySelector('[data-act="copy"]').addEventListener('click',e=>{
+    e.stopPropagation();
+    const linhas=[c.name,c.urn,c.empresa,c.cnpj,c.vendedor].filter(Boolean);
+    const txt=linhas.join(' | ');
+    navigator.clipboard.writeText(txt).then(()=>showToast('Dados copiados: '+txt)).catch(()=>showToast('Não foi possível copiar'));
+    menu.classList.remove('open');
+  });
+  menu.querySelector('[data-act="move"]').addEventListener('click',e=>{
+    e.stopPropagation();
+    submenu.classList.toggle('open');
+  });
+  submenu.querySelectorAll('[data-move-to]').forEach(btn=>{
+    btn.addEventListener('click',async e=>{
+      e.stopPropagation();
+      const novoStage=btn.dataset.moveTo;
+      kanbanState[c.uuid]=novoStage;
+      menu.classList.remove('open');
+      render();
+      await pushKanban(c.uuid,novoStage);
+      showToast('Card movido para "'+(STAGES.find(s=>s.id===novoStage)||{}).nome+'"');
+    });
+  });
+  document.addEventListener('click',e=>{if(!d.contains(e.target))menu.classList.remove('open');});
+
   return d;
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  if(!t)return;
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h=setTimeout(()=>t.classList.remove('show'),2200);
 }
 function sortFn(s){
   if(s==='ATRASADO')return (a,b)=>(b.intent_score-a.intent_score)||((a.contact_date_iso||'9')>(b.contact_date_iso||'9')?1:-1);
@@ -865,25 +1015,26 @@ async function loadKanban(){
 async function pushKanban(uuid,coluna){
   const sav=document.getElementById('saving');if(sav)sav.classList.add('show');
   try{
-    await fetch(SB_URL+'/rest/v1/kanban_posicoes',{method:'POST',
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+    const r=await fetch(SB_URL+'/rest/v1/kanban_posicoes?on_conflict=lead_id',{method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
       body:JSON.stringify({lead_id:uuid,coluna:coluna})});
-  }catch(e){console.error('Erro ao salvar:',e);}
+    if(!r.ok){
+      const txt=await r.text();
+      console.error('Erro ao salvar (status '+r.status+'):',txt);
+      showToast('Não foi possível salvar a posição (status '+r.status+')');
+    }
+  }catch(e){
+    console.error('Erro ao salvar:',e);
+    showToast('Sem conexão com o servidor de posições');
+  }
   if(sav)sav.classList.remove('show');
 }
 
-['q','f-vend','f-uf','f-mes','f-orig','f-time'].forEach(id=>{
-  const el=document.getElementById(id);
-  const key=id==='q'?'q':id.split('-')[1];
-  el.addEventListener(id==='q'?'input':'change',e=>{
-    f[key]=e.target.value;
-    if(id==='f-time'){populaVendedores(e.target.value);f.vend=sv.value;}
-    render();
-  });
-});
+document.getElementById('q').addEventListener('input',e=>{f.q=e.target.value;render();});
 render();
 </script>
 <div class="saving" id="saving">💾 Salvando...</div>
+<div class="toast" id="toast"></div>
 </body>
 </html>"""
 
