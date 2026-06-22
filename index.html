@@ -297,7 +297,7 @@ function card(c,v,isErpCol){
   const movidoManual=!isErpCol && kanbanState[c.uuid] && kanbanState[c.uuid]!==fs;
   let dateHtml='';
   if(!isErpCol&&(fs==='CONTATAR'||fs==='ATRASADO')&&c.contact_date){
-    dateHtml='<div class="datebox"><div class="when">📞 Contatar até '+esc(c.contact_date)+'</div>'
+    dateHtml='<div class="datebox"><div class="when">Contatar até '+esc(c.contact_date)+'</div>'
       +'<div class="week">Semana de '+esc(weekOf(c.contact_date_iso))+'</div>'
       +'<div class="basis">'+esc(c.date_basis)+'</div></div>';
   }
@@ -321,7 +321,7 @@ function card(c,v,isErpCol){
   if(isErpCol)badges.push('<span class="b">Conversa: '+esc(stageLabel[c.stage]||c.stage)+'</span>');
   if(c.origem==='Inbound')badges.push('<span class="b inb">Inbound</span>');
   if(c.mencionou_orcamento&&c.stage!=='ORCAMENTO'&&!isErpCol)badges.push('<span class="b orc">Tem orçamento</span>');
-  if(movidoManual)badges.push('<span class="b" style="background:var(--brand-md);color:#fff;font-weight:700">📌 Movido manualmente</span>');
+  if(movidoManual)badges.push('<span class="b" style="background:var(--brand-md);color:#fff;font-weight:700">Movido manualmente</span>');
   const iscore=c.intent_score?'<div class="iscore" style="background:'+ICOLOR[c.intent_score]+'" title="Intenção '+c.intent_score+'/5">'+c.intent_score+'</div>':'';
   d.innerHTML='<button type="button" class="card-menu-btn" data-act="menu">⋮</button>'
     +'<div class="card-menu" data-menu>'
