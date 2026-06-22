@@ -638,7 +638,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Funil Comercial · Amara NZero · Weni</title>
-<link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAIACZAwAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAA2BJREFUeJxdk0tPnGUYhu/ned/vmwMHZ2AGmAK2qTU1gE0N0ahU0YXEogsXFn+BabSJBGtd6q6J0UU3Nk0xujCmwkJN3NhEBdqq0FZq6cFDsAU5tDBlYIaZ+fod3vdxgU0a7/2Ve3NdBAAiICIIAPx0pfNxN6Zeh5XnWWwrBKQ0lhXzeLEqn+zbc/WX+xkSAQHA+HivSrQUPtCaDiVcxEpVRsHT8AxDayCdNKijIFSwJ8Zn/SOD/bO+CIhG5YDa+esNjuLBN41Z3b+Wj+TvzZpweiPJi3eJI0u23gFlXUGjG/Kzu+5Swqv8cGk583JNvikkADh3+dGPmlv04fxKFPxcSOkv1xL8eylCJbSAZriRwQ4N6ck41OAgeOmRspuulo4/1nn9EJ2Z6drjaLoYY5ELa/X66FwNzxeCERCdijlcEivdIcmQANtqrZGBdpeyMZi+XIFzMe9pXaPp3YY0O7fWFUZWk5hfDYbU0MQxA8AHAGCsbbjv09s2nCoTP3R6NbSv5lzc8OsoxcFbemo9cVo2zIxnEhu/FVWmN9V6YvK43pmIOZtaOOl7QbgqppYjOsJx9fVSNbS3fcvZskbJUb36zen6HggCGHcyljL9k/7Ce2B+MPDDPwNGOzs0Jwb1rHkRXrAAze1rgYgfMiqRamEY+w8C/hE6eIX9aElAVQBLimkTxn4XifFAYkkkTwSGYEuY/6aHn/BLzTXlh8/la/Vnc872nJt9f9Zb3u2QWo8n9WpxkxqUtqkoMjlJ6FZUQpNxFcccQVKbFb03tflMUxMPZNUGLpQbMTa/eFMNjn9cBVDcOqns+vzF4lzVfGV9I9uSRC0xtk21gUq70QSNXerYG4+p8y5ZnF9LqaM3k7ywEXyhmE45WhctbHdo7TtCaEtaI6+1OdQUJ/NCrqBadbVnS6SZrmPNzc5gfiUKzt5JOSPrCfqjGKEaWsBhOJHBdgd2X6PmRoeC/bsrbtornezuvHaQRkcPqI6Oa2qT1LeZjO67sxrJbLk2nN6Iq0WPKbJkH3C3VG5wtlSu8SoTfxXq9mOxPaB7VY1e7XB3aPWhYrwRd8kp3ovJKiglSCcN6jkwWuzw95fr3j48MOmJgOj/OU9d73qKmA8S5DkSyRGEFNMtpeRMxeeTT3ZeOXs/8y/7EqY4HYLD3wAAAABJRU5ErkJggg==">
+<link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAAAIAB2AwAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAz1JREFUeJx1k1tslFUUhdc+5/z/zPxzKR1gKNFUQ6ClRUZDC0VtpNJSSAU0MR0eTNQHlUdNfDAkJuPExBcjLyZeiAmK96mNaFJSWqLEGBMupZESQ1tLRYNKp06nZYbOfzln+wAlGHW9fytrr+xFuKl8vldmMn0aAIbGe5oswe0UBGukEB4pmqgG8mRX48AVAMhyVuQoZwCAbocHTnU2xJZbrwpjdtu2cAIW8JnAxsCGLkjGp2NTyD27a6iYZYgcwdASfHx0R7eTkPloRNT8MWv0ZCXk/u5KuAbkCKhkyFhNdYxksDixWPV7Ojd+O5VlCAKDTl7oWi/C8qwiOFMlef3LouOc8wjFgAFtkPS1vicm+a4wmXtXGbtRlsdDSm5pW9dWViCwN0YHa0MifHkW5bcL0dgPM+4YtDkKojIkti0o2fPLXwFvXUZkrtqeUx9vXKMXDhDlDtDw+Z1dy1PWsHYN3rqawOGfqh/2OtYz/Zk+j28WrD7e+6QW4rBxNe9ZqXhDQsq2+LWZluR8s5IWz7nX9QvFMvSp31xeO1J974s3j3r87nMWGsYZE2Xyn/j6iHx/73aK2k+NXvO9+rAURbZXlbzIVsJ/iwDcCJDdpvBKh5Efje7WYesrx/X9fSmLNqeMaoksPC/+x+Bf0sQGYDAAvmHNYCg1eKF7S21cts+U2Lz0c0RHjv/6zrlDI/6tEwopAcoF8oM9jxoi1CqwIyFDrMkGX1JKoMYKyTfqlhm03hnCkQfvSPPqkf1y/yF/qUT65LEMEz3NZU/ft0KJuE1US+5sKq6/JwAYGtsxnKyRD0/PisXX/4zGThfcM9DcD4EKiDqgxOMIDG9OkGmJ2fr+em2vw8LBBxpPvEgA8N3FXWkonJHM9kRJLfbPRSKjVUJJM2AYST/QzVGBtRGhN6w0drNdmZa+1dK+sXVe5fO98qH1feeHfuzqDUfVZ+nVHEnalWCyYntXXAnfgBwhVdI2VlNdIFeY6nSlah7pTg/MMbeKf4zp2Mj2dCxhv0ZsukMhabma4BsCgaGMnrclPr88Ty9nNg0WmLOCKGdu/cHtcz4xuXOTAjpIm7sFkU8CF10W33Q2DE4BwBIMAH8DEBCDYUkETXQAAAAASUVORK5CYII=">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,500;0,700;0,800;1,400&display=swap" rel="stylesheet">
 <style>
@@ -667,16 +667,13 @@ h1{font-family:'Lato',sans-serif;font-size:24px;font-weight:800;margin:4px 0 5px
 .controls input[type=search]{flex:1;min-width:190px}
 .controls input:focus,.controls select:focus{outline:2px solid var(--brand-dk);outline-offset:1px}
 .controls label{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin-right:-4px}
-.board{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;padding:18px 28px 40px;align-items:start}
-@media(max-width:1500px){.board{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:1100px){.board{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:820px){.board{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:600px){.board{grid-template-columns:1fr}.controls,header{padding-left:16px;padding-right:16px}.board{padding:14px 16px 40px}}
+.board{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;padding:14px 10px 40px;align-items:start}
+@media(max-width:600px){.controls,header{padding-left:16px;padding-right:16px}.board{padding:14px 16px 40px}}
 .col-head{display:flex;justify-content:space-between;align-items:baseline;padding:9px 4px;position:sticky;top:0;background:var(--paper);z-index:2;border-bottom:2px solid var(--tier)}
 .col-head h2{font-family:'Lato',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.02em;color:var(--tier)}
 .col-head .count{font-family:'Lato',sans-serif;font-size:12px;color:var(--ink-soft)}
 .col-sep{border-left:2px dashed var(--erp);padding-left:8px}
-.card{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--tier);border-radius:10px;padding:11px 13px;margin-top:9px;cursor:pointer;transition:box-shadow .15s}
+.card{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--tier);border-radius:8px;padding:8px 9px;margin-top:7px;cursor:pointer;transition:box-shadow .15s}
 .card:hover{box-shadow:0 3px 14px rgba(22,36,58,.10)}
 .card:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .cardtop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
