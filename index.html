@@ -192,7 +192,7 @@ const STAGES=[
   {id:'ERP',nome:'✓ Confirmado no ERP',v:'erp',sep:true},
 ];
 const ICOLOR={5:'var(--i5)',4:'var(--i4)',3:'var(--i3)'};
-const shown=Object.fromEntries(STAGES.map(s=>[s.id,15]));
+const shown=Object.fromEntries(STAGES.map(s=>[s.id,10]));
 // ---- populate selects ----
 const MES_PT={'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 const CUR_MONTH=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');})();
@@ -447,7 +447,7 @@ function render(){
     if(items.length>shown[s.id]){
       const b=document.createElement('button');b.className='more';
       b.textContent='Mostrar mais ('+( items.length-shown[s.id])+' restantes)';
-      b.onclick=()=>{shown[s.id]+=15;render();};
+      b.onclick=()=>{shown[s.id]+=10;render();};
       col.appendChild(b);
     }
     board.appendChild(col);
