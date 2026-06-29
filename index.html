@@ -326,7 +326,7 @@ function card(c,v,isErpCol){
   d.innerHTML='<button type="button" class="card-menu-btn" data-act="menu">⋮</button>'
     +'<div class="card-menu" data-menu>'
     +'<button type="button" data-act="copy">Copiar dados</button>'
-    +'<button type="button" data-act="move">↔Mover para...</button>'
+    +'<button type="button" data-act="move">Mover para...</button>'
     +'<div class="submenu" data-submenu>'
     +STAGES.filter(s=>s.id!=="ERP").map(s=>'<button type="button" data-move-to="'+s.id+'" style="padding-left:18px;font-size:12px">'+s.nome+'</button>').join('')
     +'</div>'
