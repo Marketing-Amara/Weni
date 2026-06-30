@@ -310,7 +310,7 @@ function card(c,v,isErpCol){
   if(c.valor_negocio!=null && c.stage==='FECHADO'){
     valorHtml='<div class="deal-value">'+fmtBRL(c.valor_negocio)+'</div>';
     if(c.valor_origem==='comprovante'){
-      valorHtml+='<div class="ocr-badge" title="'+esc(c.ocr_texto_evid||'')+'">🔍 Verificar valor (lido por OCR)</div>';
+      valorHtml+='<div class="ocr-badge" title="'+esc(c.ocr_texto_evid||'')+'">Verificar valor (lido por OCR)</div>';
     }
   }
   const stageLabel={CONTATAR:'Entrar em contato',ENTROU:'Entrou',ORCAMENTO:'Orçamento',FECHADO:'Fechou',PERDIDO:'Perdido',SUPORTE:'Suporte/atendimento',SEM_SINAL:'Sem sinal'};
@@ -321,12 +321,12 @@ function card(c,v,isErpCol){
   if(isErpCol)badges.push('<span class="b">Conversa: '+esc(stageLabel[c.stage]||c.stage)+'</span>');
   if(c.origem==='Inbound')badges.push('<span class="b inb">Inbound</span>');
   if(c.mencionou_orcamento&&c.stage!=='ORCAMENTO'&&!isErpCol)badges.push('<span class="b orc">Tem orçamento</span>');
-  if(movidoManual)badges.push('<span class="b" style="background:var(--brand-md);color:#fff;font-weight:700">📌 Movido manualmente</span>');
+  if(movidoManual)badges.push('<span class="b" style="background:var(--brand-md);color:#fff;font-weight:700">Movido manualmente</span>');
   const iscore=c.intent_score?'<div class="iscore" style="background:'+ICOLOR[c.intent_score]+'" title="Intenção '+c.intent_score+'/5">'+c.intent_score+'</div>':'';
   d.innerHTML='<button type="button" class="card-menu-btn" data-act="menu">⋮</button>'
     +'<div class="card-menu" data-menu>'
-    +'<button type="button" data-act="copy">📋 Copiar dados</button>'
-    +'<button type="button" data-act="move">↔️ Mover para...</button>'
+    +'<button type="button" data-act="copy">Copiar dados</button>'
+    +'<button type="button" data-act="move">Mover para...</button>'
     +'<div class="submenu" data-submenu>'
     +STAGES.filter(s=>s.id!=="ERP").map(s=>'<button type="button" data-move-to="'+s.id+'" style="padding-left:18px;font-size:12px">'+s.nome+'</button>').join('')
     +'</div>'
@@ -515,7 +515,7 @@ async function pushKanban(uuid,coluna){
 document.getElementById('q').addEventListener('input',e=>{f.q=e.target.value;render();});
 render();
 </script>
-<div class="saving" id="saving">💾 Salvando...</div>
+<div class="saving" id="saving">Salvando...</div>
 <div class="toast" id="toast"></div>
 </body>
 </html>
