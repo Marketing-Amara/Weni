@@ -56,7 +56,9 @@ TOKEN_FIXO = ""                 # token unico (se a Weni te deu so um)
 TOKEN_FIXO_MESSAGES = ""        # token das CONVERSAS (se forem dois)
 TOKEN_FIXO_CONTACTS = ""        # token dos CONTATOS (se forem dois)
 
-# Quantos dias de conversas baixar para tras. A base de contatos vem completa.
+# Quantos dias de conversas baixar para tras (usado apenas se voce NAO fixar
+# uma data manualmente la embaixo, na funcao main). A base de contatos vem
+# sempre completa, sem filtro de data.
 DIAS_DE_HISTORICO = 45
 
 # Pausa entre paginas (segundos). O limite da Weni e 2500 chamadas/hora.
@@ -233,18 +235,20 @@ def main():
     ap = argparse.ArgumentParser(description="Baixa conversas e contatos da API da Weni.")
     ap.add_argument("--output", default="./entradas", help="pasta onde salvar os .xlsx")
     ap.add_argument("--dias", type=int, default=DIAS_DE_HISTORICO,
-                    help="quantos dias de conversas baixar (padrao %d)" % DIAS_DE_HISTORICO)
+                    help="quantos dias de conversas baixar (padrao %d). Ignorado, pois ha uma data fixa definida no codigo." % DIAS_DE_HISTORICO)
     args = ap.parse_args()
 
     tk_msg, tk_con = get_tokens()
     os.makedirs(args.output, exist_ok=True)
-    desde = (datetime.utcnow() - timedelta(days=args.dias)).strftime("%Y-%m-%dT%H:%M:%S.000000Z")
+
+    # Data fixa de inicio: busca tudo desde 05/05/2026 ate o momento atual.
+    desde = "2026-05-05T00:00:00.000000Z"
 
     print("Baixando CONTATOS da Weni...")
     contatos = fetch_all(CONTACTS_URL, tk_con, rotulo="contatos")
     df_con = normaliza_contatos(contatos)
 
-    print("Baixando CONVERSAS da Weni (ultimos %d dias)..." % args.dias)
+    print("Baixando CONVERSAS da Weni (desde 05/05/2026)...")
     mensagens = fetch_all(MESSAGES_URL, tk_msg, params={"after": desde}, rotulo="conversas")
     df_msg = normaliza_mensagens(mensagens)
 
