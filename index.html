@@ -114,7 +114,12 @@ footer b{color:var(--ink)}
 .kpi-toggle{font-size:11px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;margin-top:8px;display:inline-block}
 .ocr-badge{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;padding:2px 7px;border-radius:999px;background:#FBEADB;color:var(--call);font-weight:700;cursor:pointer;margin-top:6px}
 .ocr-badge:hover{background:#F6DCC0}
-.deal-value{font-family:'Lato',sans-serif;font-weight:800;color:var(--won);font-size:13px;margin-top:6px}
+.deal-value{font-family:'Lato',sans-serif;font-weight:800;color:var(--won);font-size:14px;margin-top:7px}
+.deal-value.a-confirmar{color:var(--call)}
+.deal-tag{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;margin-top:5px;margin-right:4px}
+.deal-tag.confirmado{background:var(--won-bg);color:var(--won)}
+.deal-tag.a-confirmar{background:#FBEADB;color:var(--call)}
+.deal-tag.neutro{background:#EDF0F2;color:var(--ink-soft)}
 .intent-bar-wrap{margin-top:7px}
 .intent-label{display:flex;justify-content:space-between;align-items:center;font-size:10px;margin-bottom:3px}
 .intent-label .pri{font-weight:800;padding:1px 7px;border-radius:999px;font-size:9.5px}
@@ -332,11 +337,23 @@ function card(c,v,isErpCol){
     orderHtml='<div class="orderbox"><div class="ped">✓ Pedido '+esc(c.order_pedido)+'</div>'
       +'<div class="st">'+esc(c.order_status)+' · '+esc(c.order_data)+'</div></div>';
   }
+  // ---- evidencia de fechamento: comprovante enviado (alta confianca) vs. cliente so falou em texto
+  // (valor pode estar errado/inferido, ex.: erro de casas decimais ou alucinacao) vs. sem valor nenhum ----
   let valorHtml='';
-  if(c.valor_negocio!=null && c.stage==='FECHADO'){
-    valorHtml='<div class="deal-value">'+fmtBRL(c.valor_negocio)+'</div>';
-    if(c.valor_origem==='comprovante'){
-      valorHtml+='<div class="ocr-badge" title="'+esc(c.ocr_texto_evid||'')+'">🔍 Verificar valor (lido por OCR)</div>';
+  if(c.stage==='FECHADO'){
+    const descLow=(c.ev_desc||'').toLowerCase();
+    const hasReceipt=descLow.includes('comprovante');
+    const byClient=(c.close_kind||'').toLowerCase().includes('cliente');
+    if(c.valor_negocio!=null){
+      valorHtml='<div class="deal-value'+(hasReceipt?'':' a-confirmar')+'">'+(hasReceipt?'🧾 ':'💬 ')+fmtBRL(c.valor_negocio)+'</div>';
+      valorHtml+=hasReceipt
+        ? '<div class="deal-tag confirmado">✓ Comprovante enviado</div>'
+        : '<div class="deal-tag a-confirmar">⚠️ Valor citado em texto — confirmar</div>';
+    } else {
+      valorHtml='<div class="deal-tag a-confirmar">⚠️ Valor não identificado — confirmar com o cliente</div>';
+    }
+    if(!byClient){
+      valorHtml+='<div class="deal-tag neutro">👤 Confirmado pelo atendente</div>';
     }
   }
   const stageLabel={CONTATAR:'Entrar em contato',ENTROU:'Entrou',ORCAMENTO:'Orçamento',FECHADO:'Fechou',PERDIDO:'Perdido',SUPORTE:'Suporte/atendimento',SEM_SINAL:'Sem sinal'};
