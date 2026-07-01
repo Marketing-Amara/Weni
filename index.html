@@ -32,6 +32,8 @@ h1{font-family:'Lato',sans-serif;font-size:23px;font-weight:800;margin:3px 0 4px
 .controls input[type=search]{flex:1;min-width:190px}
 .controls input:focus,.controls select:focus{outline:2px solid var(--brand-dk);outline-offset:1px}
 .controls label{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin-right:-4px;font-weight:700}
+.clear-filters-btn{padding:8px 12px;border:1px dashed var(--ink-faint);border-radius:20px;background:transparent;color:var(--ink-soft);font:inherit;font-size:12.5px;cursor:pointer}
+.clear-filters-btn:hover{border-color:var(--ink-soft);color:var(--ink)}
 @media(max-width:600px){.controls,header{padding-left:16px;padding-right:16px}.board{padding-left:10px;padding-right:10px}}
 .board{display:flex;gap:0;padding:16px 14px 40px;align-items:flex-start;overflow-x:auto;scroll-snap-type:x proximity}
 .board>section{flex:0 0 272px;width:272px;padding:0 6px;scroll-snap-align:start}
@@ -112,13 +114,7 @@ footer b{color:var(--ink)}
 .kpi-bk-item .bk-val{font-family:'Lato',sans-serif;font-size:12.5px;color:var(--won)}
 .kpi-bk-item .bk-count{font-size:10px;color:var(--ink-soft)}
 .kpi-toggle{font-size:11px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;margin-top:8px;display:inline-block}
-.ocr-badge{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;padding:2px 7px;border-radius:999px;background:#FBEADB;color:var(--call);font-weight:700;cursor:pointer;margin-top:6px}
-.ocr-badge:hover{background:#F6DCC0}
-.deal-value{font-family:'Lato',sans-serif;font-weight:800;color:var(--won);font-size:14px;margin-top:7px}
-.deal-value.a-confirmar{color:var(--call)}
 .deal-tag{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;margin-top:5px;margin-right:4px}
-.deal-tag.confirmado{background:var(--won-bg);color:var(--won)}
-.deal-tag.a-confirmar{background:#FBEADB;color:var(--call)}
 .deal-tag.neutro{background:#EDF0F2;color:var(--ink-soft)}
 .valuebox{margin-top:9px;padding:9px 11px;border-radius:8px;border:1px solid transparent}
 .valuebox .vb-amount{font-family:'Lato',sans-serif;font-weight:800;font-size:17px;line-height:1.1}
@@ -159,6 +155,7 @@ footer b{color:var(--ink)}
   <div class="msel" id="msel-uf"><label>UF</label><button class="msel-btn" type="button">Todas</button><div class="msel-panel"></div></div>
   <div class="msel" id="msel-mes"><label>Mês</label><button class="msel-btn" type="button">Todos</button><div class="msel-panel"></div></div>
   <div class="msel" id="msel-orig"><label>Origem</label><button class="msel-btn" type="button">Todas</button><div class="msel-panel"></div></div>
+  <button type="button" class="clear-filters-btn" id="clear-filters">Limpar filtros</button>
 </div>
 <div class="board" id="board"></div>
 <footer>
@@ -237,7 +234,8 @@ const shown=Object.fromEntries(STAGES.map(s=>[s.id,15]));
 const MES_PT={'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 const CUR_MONTH=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');})();
 // ---- filter state: vend/uf/mes/orig sao arrays (multi-selecao); time/q sao unicos ----
-let f={q:'',vend:[],uf:[],mes:[CUR_MONTH],orig:[],time:[]};
+const LATEST_MONTH_WITH_DATA=(()=>{const months=[...new Set(DATA.map(c=>c.last_month))].filter(Boolean).sort();return months.length?months[months.length-1]:CUR_MONTH;})();
+let f={q:'',vend:[],uf:[],mes:[LATEST_MONTH_WITH_DATA],orig:[],time:[]};
 
 function mesLabel(m){const[y,mm]=m.split('-');return MES_PT[mm]+'/'+y;}
 
@@ -315,6 +313,7 @@ function filtra(){
     (!q||c.name.toLowerCase().includes(q)||c.urn.includes(q)||(c.empresa||'').toLowerCase().includes(q)||(c.cnpj||'').includes(q)||(c.cidade||'').toLowerCase().includes(q)));
 }
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function debounce(fn,ms){let t;return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),ms);};}
 function weekOf(iso){const d=parseISO(iso);const s=startOfWeek(d);const e=new Date(s);e.setDate(s.getDate()+4);return fmt(s)+'–'+fmt(e);}
 function intentBar(score,priority){
   const p=(priority||'').toLowerCase();
@@ -575,8 +574,16 @@ async function pushKanban(uuid,coluna){
   if(sav)sav.classList.remove('show');
 }
 
-document.getElementById('q').addEventListener('input',e=>{f.q=e.target.value;render();});
+document.getElementById('q').addEventListener('input',debounce(e=>{f.q=e.target.value;render();},200));
+document.getElementById('clear-filters').addEventListener('click',()=>{
+  f={q:'',vend:[],uf:[],mes:[LATEST_MONTH_WITH_DATA],orig:[],time:[]};
+  document.getElementById('q').value='';
+  mselTime.updateBtn();mselVend.updateBtn();mselUf.updateBtn();mselMes.updateBtn();mselOrig.updateBtn();
+  render();
+});
 render();
+// carrega as posicoes manuais salvas no Supabase e re-renderiza para refletir o kanban salvo
+loadKanban().then(render);
 </script>
 <div class="saving" id="saving">Salvando...</div>
 <div class="toast" id="toast"></div>
