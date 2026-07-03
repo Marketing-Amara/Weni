@@ -311,7 +311,7 @@ function filterMonthOf(c,colId){
   return c.last_month;
 }
 const mselMes=buildMsel('mes',()=>{
-  const months=new Set();
+  const months=new Set([CUR_MONTH]);
   DATA.forEach(c=>{
     if(c.last_month)months.add(c.last_month);
     const fm=filterMonthOf(c,null); if(fm)months.add(fm);
