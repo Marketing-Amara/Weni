@@ -935,17 +935,38 @@ const mselVend=buildMsel('vend',()=>{
   return [...new Set(pool.map(c=>c.vendedor))].sort().map(v=>({v,label:v}));
 },'vend');
 const mselUf=buildMsel('uf',()=>[...new Set(DATA.map(c=>c.uf).filter(Boolean))].sort().map(v=>({v,label:v})),'uf');
-const mselMes=buildMsel('mes',()=>[...new Set(DATA.map(c=>c.last_month))].sort().reverse().map(v=>({v,label:mesLabel(v)})),'mes',mesLabel);
+function ddmmyyyyToMonth(s){
+  if(!s) return null;
+  const p=s.split('/');
+  return p.length===3 ? p[2]+'-'+p[1].padStart(2,'0') : null;
+}
+function filterMonthOf(c,colId){
+  if(colId==='ERP') return ddmmyyyyToMonth(c.order_data) || c.last_month;
+  if(c.stage==='FECHADO') return ddmmyyyyToMonth(c.ev_date) || c.last_month;
+  return c.last_month;
+}
+const mselMes=buildMsel('mes',()=>{
+  const months=new Set();
+  DATA.forEach(c=>{
+    if(c.last_month)months.add(c.last_month);
+    const fm=filterMonthOf(c,null); if(fm)months.add(fm);
+    const erpm=ddmmyyyyToMonth(c.order_data); if(erpm)months.add(erpm);
+  });
+  return [...months].sort().reverse().map(v=>({v,label:mesLabel(v)}));
+},'mes',mesLabel);
 const mselOrig=buildMsel('orig',()=>[{v:'Inbound',label:'Inbound'},{v:'Disparo',label:'Disparo'}],'orig');
 
-function filtra(){
+function filtraBase(){
   const q=f.q.toLowerCase();
   return DATA.filter(c=>
     (f.vend.length===0||f.vend.includes(c.vendedor))&&(f.time.length===0||f.time.includes(c.team))&&
     (f.uf.length===0||f.uf.includes(c.uf))&&
-    (f.mes.length===0||f.mes.includes(c.last_month))&&
     (f.orig.length===0||f.orig.includes(c.origem))&&
     (!q||c.name.toLowerCase().includes(q)||c.urn.includes(q)||(c.empresa||'').toLowerCase().includes(q)||(c.cnpj||'').includes(q)||(c.cidade||'').toLowerCase().includes(q)));
+}
+// usado pelos KPIs do topo (visao geral, sem ser especifica de uma coluna)
+function filtra(){
+  return filtraBase().filter(c=>f.mes.length===0||f.mes.includes(filterMonthOf(c,null)));
 }
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function debounce(fn,ms){let t;return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),ms);};}
@@ -1118,10 +1139,10 @@ function sortFn(s){
   return (a,b)=>(b.intent_score-a.intent_score)||b.last_iso.localeCompare(a.last_iso);
 }
 function render(){
-  const data=filtra();
+  const base=filtraBase();
   const board=document.getElementById('board');board.innerHTML='';
   STAGES.forEach(s=>{
-    const items=data.filter(c=>inColumn(c,s.id)).sort(sortFn(s.id));
+    const items=base.filter(c=>(f.mes.length===0||f.mes.includes(filterMonthOf(c,s.id)))&&inColumn(c,s.id)).sort(sortFn(s.id));
     const col=document.createElement('section');
     if(s.sep)col.className='col-sep';
     col.innerHTML='<div class="col-head" style="--tier:var(--'+s.v+')"><h2>'+s.nome+'</h2><span class="count">'+items.length+'</span></div>';
@@ -1150,7 +1171,7 @@ function render(){
     board.appendChild(col);
   });
   renderHdMeta();
-  renderKPI(data);
+  renderKPI(filtra());
 }
 function fmtBRL(v){return 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function renderKPI(data){
