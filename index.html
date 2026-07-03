@@ -234,8 +234,7 @@ const shown=Object.fromEntries(STAGES.map(s=>[s.id,15]));
 const MES_PT={'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 const CUR_MONTH=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');})();
 // ---- filter state: vend/uf/mes/orig sao arrays (multi-selecao); time/q sao unicos ----
-const LATEST_MONTH_WITH_DATA=(()=>{const months=[...new Set(DATA.map(c=>c.last_month))].filter(Boolean).sort();return months.length?months[months.length-1]:CUR_MONTH;})();
-let f={q:'',vend:[],uf:[],mes:[LATEST_MONTH_WITH_DATA],orig:[],time:[]};
+let f={q:'',vend:[],uf:[],mes:[CUR_MONTH],orig:[],time:[]};
 
 function mesLabel(m){const[y,mm]=m.split('-');return MES_PT[mm]+'/'+y;}
 
@@ -597,7 +596,7 @@ async function pushKanban(uuid,coluna){
 
 document.getElementById('q').addEventListener('input',debounce(e=>{f.q=e.target.value;render();},200));
 document.getElementById('clear-filters').addEventListener('click',()=>{
-  f={q:'',vend:[],uf:[],mes:[LATEST_MONTH_WITH_DATA],orig:[],time:[]};
+  f={q:'',vend:[],uf:[],mes:[CUR_MONTH],orig:[],time:[]};
   document.getElementById('q').value='';
   mselTime.updateBtn();mselVend.updateBtn();mselUf.updateBtn();mselMes.updateBtn();mselOrig.updateBtn();
   render();
