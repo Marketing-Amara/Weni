@@ -820,6 +820,7 @@ function parseISO(s){const[y,m,dd]=s.split('-').map(Number);return new Date(y,m-
 const NOW=new Date();
 const WEEK_START=startOfWeek(NOW);const WEEK_END=new Date(WEEK_START);WEEK_END.setDate(WEEK_START.getDate()+6);
 const MONTH_START=new Date(NOW.getFullYear(),NOW.getMonth(),1);
+const TODAY_START=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate());
 const MES_NOMES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 function renderHdMeta(){
   const el=document.getElementById('hdMeta');
@@ -830,7 +831,8 @@ function renderHdMeta(){
     +'<span class="dot-sep"></span><b>'+esc(divisao)+'</b>'
     +'<span class="dot-sep"></span>Atualizado em: '+esc(updated);
 }
-function isOverdue(c){if(!c.contact_date_iso)return false;const d=parseISO(c.contact_date_iso);return d<WEEK_START&&d>=MONTH_START;}
+// atrasado = prazo de contato ja passou (comparado a HOJE, nao ao inicio da semana)
+function isOverdue(c){if(!c.contact_date_iso)return false;const d=parseISO(c.contact_date_iso);return d<TODAY_START&&d>=MONTH_START;}
 function isStale(c){if(!c.contact_date_iso)return false;return parseISO(c.contact_date_iso)<MONTH_START;}
 // ---- reclassificacao por sinais de conversa, por cima do 'stage' bruto vindo dos dados ----
 // intent_score>=3 = cliente sinalizou intencao real de fechar ("Como proceder", "Desconto/negociacao",
