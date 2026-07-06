@@ -227,6 +227,26 @@ TIME_PHRASES = [
 CC=[(re.compile(p,re.I),d) for p,d in CLIENT_CLOSE]
 ACR=[(re.compile(p,re.I),d) for p,d in AGENT_CLOSE]
 AP=[(re.compile(p,re.I),d) for p,d in AGENT_PROGRESS]
+
+# ---- como o fechamento aconteceu: sozinho, com apoio do comercial (so revisou/direcionou)
+# ou com apoio ativo (refez orcamento, negociou, mandou proposta nova) ----
+AGENT_REWORK = [
+    (r"proposta[s]?\s+atualizada[s]?|or[çc]amento[s]?\s+(?:atualizado[s]?|novo[s]?)|novo[s]?\s+or[çc]amento", "Enviou proposta/orçamento atualizado"),
+    (r"quer\s+que\s+(?:eu\s+)?altere|posso\s+alterar\s+(?:o|seu)\s+pedido|vou\s+alterar\s+(?:o|seu)\s+pedido", "Ofereceu alterar item do pedido"),
+    (r"consegui\s+(?:um\s+)?desconto|condi[çc][ãa]o\s+especial|abaixei\s+o\s+valor|ajustei\s+o\s+valor", "Negociou desconto/condição especial"),
+    (r"n[ãa]o\s+estamos\s+com.{0,30}em\s+estoque|temos.{0,30}em\s+estoque", "Verificou estoque para o pedido"),
+]
+AGENT_SELF_SERVICE = [
+    (r"exclusivamente\s+pelo\s+portal|realizad[oa]s?\s+(?:exclusivamente\s+)?pelo\s+portal", "Direcionou para o portal"),
+    (r"consegu(?:e|iu)\s+acessar\s+(?:o\s+)?(?:portal|site|app)|[ée]\s+s[óo]\s+(?:acessar|fazer)\s+(?:pelo|no)\s+(?:portal|site|app)", "Direcionou para autoatendimento"),
+]
+REW=[(re.compile(p,re.I),d) for p,d in AGENT_REWORK]
+SSV=[(re.compile(p,re.I),d) for p,d in AGENT_SELF_SERVICE]
+# mensagem que e so um anexo (o Weni exporta o nome do arquivo como texto, ex.: "042dde3f-...-....pdf")
+ATTACH_PAT=re.compile(r"^[\w\-]+\.(pdf|jpg|jpeg|png)$", re.I)
+# atendente humano = mensagem OUT que comeca com "Nome:" (nao usado como sinal de apoio -
+# TODO cliente atendido por humano tem esse prefixo -, so para achar o texto do que ele disse)
+HUMAN_PREFIX=re.compile(r"^\s*[A-ZÀ-Ÿ][a-zà-ÿ]+(?:\s[A-ZÀ-Ÿ][a-zà-ÿ]+)?\s*:\s*")
 CT=[(re.compile(p,re.I),d,w) for p,d,w in CONTATAR]
 ORG=[(re.compile(p,re.I),d) for p,d in ORCAMENTO]
 PE=[(re.compile(p,re.I),d) for p,d in PERDIDO]
@@ -432,6 +452,29 @@ def classify(conv_path, ct_map, orders):
         convo_closed=bool(hit["CLOSE"]) or bool(hit["ACLOSE"])
         if convo_is_fluig and not hit["CLOSE"]: convo_closed=False
 
+        # ---- fechou sozinho / com apoio do comercial (revisao ou reelaboracao do orcamento)? ----
+        comercial_suporte=""; comercial_evid=""
+        if convo_closed:
+            rework_hit=None; selfserv_hit=None; human_out=False
+            for dt,t in out_msgs:
+                if HUMAN_PREFIX.search(t): human_out=True
+                if rework_hit is None and ATTACH_PAT.match(t.strip()):
+                    rework_hit=("Enviou proposta em anexo",dt,t[:160].strip())
+                if rework_hit is None:
+                    for pat,desc in REW:
+                        if pat.search(t): rework_hit=(desc,dt,t[:220].strip()); break
+                if selfserv_hit is None:
+                    for pat,desc in SSV:
+                        if pat.search(t): selfserv_hit=(desc,dt,t[:220].strip()); break
+            if rework_hit:
+                comercial_suporte="Comercial refez orçamento"; comercial_evid=rework_hit[2]
+            elif not human_out:
+                comercial_suporte="Fechou sozinho (sem atendente)"
+            elif selfserv_hit:
+                comercial_suporte="Fechou sozinho (via portal)"; comercial_evid=selfserv_hit[2]
+            else:
+                comercial_suporte="Comercial revisou orçamento"
+
         # atendente avancou a demanda DEPOIS do ultimo sinal de categoria A/B?
         last_signal_dt = max((e[1] for e in hit["CONTATAR"]), default=None) if hit["CONTATAR"] and not is_suporte_only else None
         agent_advanced=False; advance_ev=None
@@ -477,6 +520,7 @@ def classify(conv_path, ct_map, orders):
             valor_negocio=valor_negocio,valor_origem=valor_origem,ocr_texto_evid=ocr_texto_evid,
             stage=stage,close_kind=ck,ev_desc=ev[0] if ev else "",ev_date=ev[1].strftime("%d/%m/%Y") if ev else "",ev_text=ev[2] if ev else "",
             mencionou_orcamento=bool(hit["ORCAMENTO"]),intent_score=iscore,intent_desc=idesc,
+            comercial_suporte=comercial_suporte,comercial_evid=comercial_evid,
             erp_match=has_order,erp_recent=bool(oi.get("data_iso","") and oi.get("data_iso","")>=period_start),
             order_pedido=oi.get("pedido",""),order_status=oi.get("status",""),order_data=oi.get("data",""),
             last=li["last_date"].strftime("%d/%m/%Y"),last_iso=li["last_date"].strftime("%Y-%m-%d"),last_month=li["last_date"].strftime("%Y-%m"),
@@ -493,7 +537,7 @@ def build_html(contacts, out_path):
     BRT = timezone(timedelta(hours=-3))
     now = datetime.now(tz=BRT).strftime("%d/%m/%Y %H:%M")
     # sanitize text fields to avoid unescaped newlines in JS
-    _text_fields = ["ev_text","ev_desc","date_basis","name","empresa","cidade","vendedor","intent_desc","weni_intent_priority"]
+    _text_fields = ["ev_text","ev_desc","date_basis","name","empresa","cidade","vendedor","intent_desc","weni_intent_priority","comercial_evid"]
     clean_contacts = []
     for c in contacts:
         cc = dict(c)
@@ -751,6 +795,10 @@ footer b{color:var(--ink)}
 .kpi-toggle{font-size:11px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;margin-top:8px;display:inline-block}
 .deal-tag{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;margin-top:5px;margin-right:4px}
 .deal-tag.neutro{background:#EDF0F2;color:var(--ink-soft)}
+.suporte-tag{display:inline-block;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px;margin-top:5px;cursor:default}
+.suporte-tag.refez{background:var(--sup-bg);color:var(--sup)}
+.suporte-tag.sozinho{background:#E8EEF4;color:#33506E}
+.suporte-tag.apoio{background:#EDF0F2;color:var(--ink-soft)}
 .valuebox{margin-top:9px;padding:9px 11px;border-radius:8px;border:1px solid transparent}
 .valuebox .vb-amount{font-family:'Lato',sans-serif;font-weight:800;font-size:17px;line-height:1.1}
 .valuebox .vb-tag{font-size:10px;font-weight:700;margin-top:3px}
@@ -790,6 +838,7 @@ footer b{color:var(--ink)}
   <div class="msel" id="msel-uf"><label>UF</label><button class="msel-btn" type="button">Todas</button><div class="msel-panel"></div></div>
   <div class="msel" id="msel-mes"><label>Mês</label><button class="msel-btn" type="button">Todos</button><div class="msel-panel"></div></div>
   <div class="msel" id="msel-orig"><label>Origem</label><button class="msel-btn" type="button">Todas</button><div class="msel-panel"></div></div>
+  <div class="msel" id="msel-apoio"><label>Fechamento</label><button class="msel-btn" type="button">Todos</button><div class="msel-panel"></div></div>
   <button type="button" class="clear-filters-btn" id="clear-filters">Limpar filtros</button>
 </div>
 <div class="board" id="board"></div>
@@ -866,12 +915,12 @@ const STAGES=[
   {id:'ERP',nome:'Confirmado no ERP',v:'erp',sep:true},
 ];
 const ICOLOR={5:'var(--i5)',4:'var(--i4)',3:'var(--i3)'};
-const shown=Object.fromEntries(STAGES.map(s=>[s.id,15]));
+const shown=Object.fromEntries(STAGES.map(s=>[s.id,10]));
 // ---- populate selects ----
 const MES_PT={'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 const CUR_MONTH=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');})();
 // ---- filter state: vend/uf/mes/orig sao arrays (multi-selecao); time/q sao unicos ----
-let f={q:'',vend:[],uf:[],mes:[CUR_MONTH],orig:[],time:[]};
+let f={q:'',vend:[],uf:[],mes:[CUR_MONTH],orig:[],time:[],apoio:[]};
 
 function mesLabel(m){const[y,mm]=m.split('-');return MES_PT[mm]+'/'+y;}
 
@@ -956,6 +1005,8 @@ const mselMes=buildMsel('mes',()=>{
   return [...months].sort().reverse().map(v=>({v,label:mesLabel(v)}));
 },'mes',mesLabel);
 const mselOrig=buildMsel('orig',()=>[{v:'Inbound',label:'Inbound'},{v:'Disparo',label:'Disparo'}],'orig');
+// filtro "Fechamento": so tem efeito dentro da coluna "Fecharam pedido" (ver uso em render())
+const mselApoio=buildMsel('apoio',()=>[...new Set(DATA.map(c=>c.comercial_suporte).filter(Boolean))].sort().map(v=>({v,label:v})),'apoio');
 
 function filtraBase(){
   const q=f.q.toLowerCase();
@@ -1030,6 +1081,11 @@ function card(c,v,isErpCol){
     }
     if(!byClient){
       valorHtml+='<div class="deal-tag neutro">Confirmado pelo atendente</div>';
+    }
+    if(c.comercial_suporte){
+      const sup=c.comercial_suporte;
+      const supCls=sup.includes('refez')?'refez':(sup.includes('sozinho')?'sozinho':'apoio');
+      valorHtml+='<div class="suporte-tag '+supCls+'"'+(c.comercial_evid?' title="'+esc(c.comercial_evid)+'"':'')+'>'+esc(sup)+'</div>';
     }
   }
   const stageLabel={CONTATAR:'Entrar em contato',ENTROU:'Entrou',ORCAMENTO:'Orçamento',FECHADO:'Fechou',PERDIDO:'Perdido',SUPORTE:'Suporte/atendimento',SEM_SINAL:'Sem sinal'};
@@ -1143,7 +1199,7 @@ function render(){
   const base=filtraBase();
   const board=document.getElementById('board');board.innerHTML='';
   STAGES.forEach(s=>{
-    const items=base.filter(c=>(f.mes.length===0||f.mes.includes(filterMonthOf(c,s.id)))&&inColumn(c,s.id)).sort(sortFn(s.id));
+    const items=base.filter(c=>(f.mes.length===0||f.mes.includes(filterMonthOf(c,s.id)))&&(s.id!=='FECHADO'||f.apoio.length===0||f.apoio.includes(c.comercial_suporte))&&inColumn(c,s.id)).sort(sortFn(s.id));
     const col=document.createElement('section');
     if(s.sep)col.className='col-sep';
     col.innerHTML='<div class="col-head" style="--tier:var(--'+s.v+')"><h2>'+s.nome+'</h2><span class="count">'+items.length+'</span></div>';
@@ -1165,8 +1221,8 @@ function render(){
     col.appendChild(body);
     if(items.length>shown[s.id]){
       const b=document.createElement('button');b.className='more';
-      b.textContent='Mostrar mais ('+( items.length-shown[s.id])+' restantes)';
-      b.onclick=()=>{shown[s.id]+=15;render();};
+      b.textContent='Ver mais ('+( items.length-shown[s.id])+' restantes)';
+      b.onclick=()=>{shown[s.id]+=10;render();};
       col.appendChild(b);
     }
     board.appendChild(col);
@@ -1233,9 +1289,9 @@ async function pushKanban(uuid,coluna){
 
 document.getElementById('q').addEventListener('input',debounce(e=>{f.q=e.target.value;render();},200));
 document.getElementById('clear-filters').addEventListener('click',()=>{
-  f={q:'',vend:[],uf:[],mes:[CUR_MONTH],orig:[],time:[]};
+  f={q:'',vend:[],uf:[],mes:[CUR_MONTH],orig:[],time:[],apoio:[]};
   document.getElementById('q').value='';
-  mselTime.updateBtn();mselVend.updateBtn();mselUf.updateBtn();mselMes.updateBtn();mselOrig.updateBtn();
+  mselTime.updateBtn();mselVend.updateBtn();mselUf.updateBtn();mselMes.updateBtn();mselOrig.updateBtn();mselApoio.updateBtn();
   render();
 });
 render();
